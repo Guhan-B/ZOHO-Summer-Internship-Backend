@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model team {
+  id           Int        @id @default(autoincrement())
+  name         String     @db.VarChar(100)
+  size         Int
+  status       Int        @default(0)
+  tournamentId Int
+  tournament   tournament @relation(fields: [tournamentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_team_tournament")
+  member       member[]
+
+  @@index([tournamentId], map: "fk_team_tournament")
+}
+
+model tournament {
+  id            Int      @id @default(autoincrement())
+  name          String   @db.VarChar(100)
+  sport         String   @db.VarChar(100)
+  description   String   @db.VarChar(100)
+  team_size     Int
+  cancelled     Int      @default(0)
+  event_date    String   @db.VarChar(100)
+  deadline_date String   @db.VarChar(100)
+  member        member[]
+  team          team[]
+}
+
+model user {
+  id            Int      @id @default(autoincrement())
+  name          String   @db.VarChar(100)
+  mobile_number String   @db.VarChar(20)
+  blood_group   String   @db.VarChar(5)
+  email         String   @unique(map: "email") @db.VarChar(100)
+  password      String   @db.VarChar(256)
+  role          Int      @default(0)
+  member        member[]
+}
+
+model member {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  teamId       Int
+  tournamentId Int
+  type         Int
+  team         team       @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_team")
+  tournament   tournament @relation(fields: [tournamentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_tournament")
+  user         user       @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_user")
+
+  @@unique([tournamentId, userId], map: "uc_member")
+  @@index([teamId], map: "fk_member_team")
+  @@index([userId], map: "fk_member_user")
+}
