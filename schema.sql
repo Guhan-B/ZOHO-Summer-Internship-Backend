@@ -15,7 +15,7 @@ CREATE TABLE Tournament (
 	id INT AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     sport VARCHAR(100) NOT NULL,
-    description VARCHAR(100) NOT NULL,
+    description VARCHAR(200) NOT NULL,
     team_size INT NOT NULL CHECK(team_size >= 1),
     cancelled INT NOT NULL DEFAULT 0,
     event_date VARCHAR(100) NOT NULL,
@@ -29,22 +29,22 @@ CREATE TABLE Team (
     name VARCHAR(100) NOT NULL,
     size INT NOT NULL,
     result INT NOT NULL DEFAULT 0,
-    tournamentId INT NOT NULL,
+    tournament_id INT NOT NULL,
     CONSTRAINT pk_team PRIMARY KEY (id),
-	CONSTRAINT fk_team_tournament FOREIGN KEY (tournamentId) REFERENCES Tournament(id)
+	CONSTRAINT fk_team_tournament FOREIGN KEY (tournament_id) REFERENCES Tournament(id)
 );
 
 -- type = 0 => normal, type = 1 => leader 
 CREATE TABLE Member (
 	id INT AUTO_INCREMENT,
-	userId INT NOT NULL,
-    teamId INT NOT NULL,
-    tournamentId INT NOT NULL,
+	user_id INT NOT NULL,
+    team_id INT NOT NULL,
+    tournament_id INT NOT NULL,
     type INT NOT NULL,
     CONSTRAINT pk_member PRIMARY KEY (id),
-    CONSTRAINT fk_member_user FOREIGN KEY (userId) REFERENCES User(id),
-    CONSTRAINT fk_member_team FOREIGN KEY (teamId) REFERENCES Team(id),
-    CONSTRAINT fk_member_tournament FOREIGN KEY (tournamentId) REFERENCES Tournament(id),
-    CONSTRAINT uc_member UNIQUE (tournamentId, userId)
+    CONSTRAINT fk_member_user FOREIGN KEY (user_id) REFERENCES User(id),
+    CONSTRAINT fk_member_team FOREIGN KEY (team_id) REFERENCES Team(id),
+    CONSTRAINT fk_member_tournament FOREIGN KEY (tournament_id) REFERENCES Tournament(id),
+    CONSTRAINT uc_member UNIQUE (tournament_id, user_id)
 );
 

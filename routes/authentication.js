@@ -22,13 +22,13 @@ const registerValidator = [
         .withMessage("Password is required")
         .isLength({ min: 8 })
         .withMessage("Passowrd should be minimum 8 characters long"),
-    body('mobileNumber')
+    body('mobile_number')
         .trim()
         .notEmpty()
         .withMessage("Mobile Number is required")
         .isLength({ min: 10, max: 10 })
         .withMessage("Mobile Number badly formated"),
-    body('bloodGroup')
+    body('blood_group')
         .trim()
         .notEmpty()
         .withMessage("Blood Group is required")

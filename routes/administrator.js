@@ -18,18 +18,18 @@ const createTournamentValidator = [
         .trim()
         .notEmpty()
         .withMessage("Sport name is required"),
-    body('teamSize')
+    body('team_size')
         .trim()
         .notEmpty()
         .withMessage("Team size is required")
         .isInt({ min: 1 })
         .withMessage("Team size cannot be less that 1")
         .toInt(),
-    body("eventDate")
+    body("event_date")
         .trim()
         .notEmpty()
         .withMessage("Event date is required"),
-    body("eventDate")
+    body("deadline_date")
         .trim()
         .notEmpty()
         .withMessage("Deadline date is required")
@@ -44,23 +44,23 @@ const editTournamentValidator = [
         .trim()
         .notEmpty()
         .withMessage("Tournament description is required"),
-    body("eventDate")
+    body("event_date")
         .trim()
         .notEmpty()
         .withMessage("Event date is required"),
-    body("eventDate")
+    body("deadline_date")
         .trim()
         .notEmpty()
         .withMessage("Deadline date is required")
 ];
 
 const resultValidator = [
-    body("teamId")
+    body("team_id")
         .trim()
         .notEmpty()
         .withMessage("Team ID is required")
         .toInt(),
-    body("tournamentId")
+    body("tournament_id")
         .trim()
         .notEmpty()
         .withMessage("Torunament ID is required")

@@ -37,11 +37,7 @@ exports.login = async (req, res, next) => {
             }
         );
 
-        return res.status(200).json({
-            data: {
-                token: token
-            }
-        });
+        return res.status(200).json({data: { token: token }});
     }
     catch(e) {
         console.log(e);
@@ -67,17 +63,13 @@ exports.register = async (req, res, next) => {
             data: {
                 name: req.body.name,
                 email: req.body.email,
-                mobile_number: req.body.mobileNumber,
-                blood_group: req.body.bloodGroup,
+                mobile_number: req.body.mobile_number,
+                blood_group: req.body.blood_group,
                 password: hash
             }
         });
 
-        return res.status(200).json({
-            data: {
-                message: "Account created successfully, continue to login."}
-            }
-        );
+        return res.status(200).json({data: { message: "Account created successfully, continue to login." }});
     }
     catch(e) {
         console.log(e);

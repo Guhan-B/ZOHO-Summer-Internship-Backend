@@ -8,22 +8,22 @@ datasource db {
 }
 
 model team {
-  id           Int        @id @default(autoincrement())
-  name         String     @db.VarChar(100)
-  size         Int
-  result       Int        @default(0)
-  tournamentId Int
-  tournament   tournament @relation(fields: [tournamentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_team_tournament")
-  member       member[]
+  id            Int        @id @default(autoincrement())
+  name          String     @db.VarChar(100)
+  size          Int
+  result        Int        @default(0)
+  tournament_id Int
+  tournament    tournament @relation(fields: [tournament_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_team_tournament")
+  member        member[]
 
-  @@index([tournamentId], map: "fk_team_tournament")
+  @@index([tournament_id], map: "fk_team_tournament")
 }
 
 model tournament {
   id            Int      @id @default(autoincrement())
   name          String   @db.VarChar(100)
   sport         String   @db.VarChar(100)
-  description   String   @db.VarChar(100)
+  description   String   @db.VarChar(200)
   team_size     Int
   cancelled     Int      @default(0)
   event_date    String   @db.VarChar(100)
@@ -44,16 +44,16 @@ model user {
 }
 
 model member {
-  id           Int        @id @default(autoincrement())
-  userId       Int
-  teamId       Int
-  tournamentId Int
-  type         Int
-  team         team       @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_team")
-  tournament   tournament @relation(fields: [tournamentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_tournament")
-  user         user       @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_user")
+  id            Int        @id @default(autoincrement())
+  user_id       Int
+  team_id       Int
+  tournament_id Int
+  type          Int
+  team          team       @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_team")
+  tournament    tournament @relation(fields: [tournament_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_tournament")
+  user          user       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_user")
 
-  @@unique([tournamentId, userId], map: "uc_member")
-  @@index([teamId], map: "fk_member_team")
-  @@index([userId], map: "fk_member_user")
+  @@unique([tournament_id, user_id], map: "uc_member")
+  @@index([team_id], map: "fk_member_team")
+  @@index([user_id], map: "fk_member_user")
 }
