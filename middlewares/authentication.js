@@ -22,10 +22,11 @@ module.exports = (role) => async (req, res, next) => {
             if (err) {
                 return next(new ServerError("Token error - " + err.message, 401, 'AUTHENTICATION_FAILED'));
             } else {
-                if(user.role !== role)
+                if(!role.includes(user.role))
                     return next(new ServerError('Access Denied', 401, 'AUTHENTICATION_FAILED'));
 
                 req.user = user;
+                
                 next();
             }
         });

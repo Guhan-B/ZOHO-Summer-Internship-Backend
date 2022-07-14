@@ -15,8 +15,7 @@ const registerValidator = [
         .notEmpty()
         .withMessage("Email is required")
         .isEmail()
-        .withMessage("Email badly formated")
-        .normalizeEmail(),
+        .withMessage("Email badly formated"),
     body('password')
         .trim()
         .notEmpty()
@@ -50,8 +49,7 @@ const loginValidator = [
         .notEmpty()
         .withMessage("Email is required")
         .isEmail()
-        .withMessage("Email badly formated")
-        .normalizeEmail(),
+        .withMessage("Email badly formated"),
     body('password')
         .trim()
         .notEmpty()

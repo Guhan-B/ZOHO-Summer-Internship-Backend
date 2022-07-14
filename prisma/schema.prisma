@@ -11,7 +11,7 @@ model team {
   id           Int        @id @default(autoincrement())
   name         String     @db.VarChar(100)
   size         Int
-  status       Int        @default(0)
+  result       Int        @default(0)
   tournamentId Int
   tournament   tournament @relation(fields: [tournamentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_team_tournament")
   member       member[]

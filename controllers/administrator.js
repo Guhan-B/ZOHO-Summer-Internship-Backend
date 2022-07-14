@@ -5,7 +5,11 @@ const prisma = require("../utils/prisma");
 
 exports.fetchTournaments = async (req, res, next) => {
     try {
-        const tournaments = await prisma.tournament.findMany();
+        const tournaments = await prisma.tournament.findMany({
+            where: {
+                cancelled: 0
+            }
+        });
 
         res.status(200).json({
             data: {
@@ -19,7 +23,6 @@ exports.fetchTournaments = async (req, res, next) => {
     }
 }
 
-// Find a way to get team members and their dertails in single query
 exports.fetchTournament = async (req, res, next) => {
     try {
         const tournament = await prisma.tournament.findUnique({where: {id: Number.parseInt(req.params.id)}});
@@ -27,7 +30,41 @@ exports.fetchTournament = async (req, res, next) => {
         if(!tournament)
             return next(new ServerError('Tournament with given ID does not exist', 404, 'RESOURCE_NOT_FOUND'));
 
-        const teams = await prisma.team.findMany({where: {tournamentId: tournament.id}});
+        const teams = await prisma.team.findMany({
+            where: {tournamentId: tournament.id},
+            select: {
+                id: true,
+                name: true,
+                status: true
+            }
+        });
+
+        for(const team of teams) {
+            const members =[];
+
+            const result = await prisma.member.findMany({
+                where: { teamId: team.id},
+                select: {
+                    type: true,
+                    user: {
+                        select: {
+                            email: true,
+                            name: true,
+                            mobile_number: true,
+                        }
+                    }
+                }
+            });
+            
+            result.forEach(result => members.push({
+                type: result.type,
+                email: result.user.email,
+                name: result.user.name,
+                mobileNumber: result.user.mobile_number
+            }));
+
+            team.members = members;
+        }
         
         return res.status(200).json({
             data: {
@@ -37,7 +74,8 @@ exports.fetchTournament = async (req, res, next) => {
         });
     }
     catch(e) {
-
+        console.log(e);
+        return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
     }
 }
 
@@ -89,8 +127,6 @@ exports.editTournament = async (req, res, next) => {
             data: {
                 name: req.body.name,
                 description: req.body.description,
-                sport: req.body.sport,
-                team_size: req.body.teamSize,
                 event_date: req.body.eventDate,
                 deadline_date: req.body.deadlineDate
             }
@@ -134,5 +170,33 @@ exports.cancelTournament = async (req, res, next) => {
 }
 
 exports.updateResult = async (req, res, next) => {
+    const err = validationResult(req);
 
+    if (!err.isEmpty()) 
+        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', err.array()));
+    try {
+        const team = await prisma.team.findFirst({
+            where: {id: req.body.teamId, tournamentId: req.body.tournamentId}
+        });
+
+        if(!team)
+            return next(new ServerError("Team and Tournament with given ID's is invalid", 404, 'RESOURCE_NOT_FOUND'));
+        
+        await prisma.team.update({
+            where: {id: req.body.teamId, tournamentId: req.body.tournamentId},
+            data: {
+                result: req.body.result
+            }
+        });
+
+        return res.status(200).json({
+            data: {
+                message: "Result updated successfully."
+            }
+        });
+    }
+    catch(e){
+        console.log(e);
+        return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
+    }
 }

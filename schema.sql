@@ -23,12 +23,12 @@ CREATE TABLE Tournament (
     CONSTRAINT pk_tournament PRIMARY KEY (id)
 );
 
--- status = 0 => REGISTERED, status = 1 => DISQUALIFIED, status = 2 => LOST, status = 3 => WINNER, status = 4 => CANCELLED
+-- result = 0 => REGISTERED, status = 1 => DISQUALIFIED, status = 2 => LOST, status = 3 => WINNER, status = 4 => NOT PARTICIPATED
 CREATE TABLE Team (
 	id INT AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     size INT NOT NULL,
-    status INT NOT NULL DEFAULT 0,
+    result INT NOT NULL DEFAULT 0,
     tournamentId INT NOT NULL,
     CONSTRAINT pk_team PRIMARY KEY (id),
 	CONSTRAINT fk_team_tournament FOREIGN KEY (tournamentId) REFERENCES Tournament(id)

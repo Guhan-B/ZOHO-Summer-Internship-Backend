@@ -18,7 +18,8 @@ app.use(helmet());
 app.use(cors());
 
 app.use("/authentication", authenticationRoutes);
-app.use("/administrator", accessHandler(1), administratorRoutes);
+app.use("/administrator", accessHandler([1]), administratorRoutes);
+// app.use("/participant", accessHandler([0]), participantRoutes);
 
 app.use(errorHandler());
 

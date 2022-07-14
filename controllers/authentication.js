@@ -86,5 +86,5 @@ exports.register = async (req, res, next) => {
 }
 
 exports.resetPassword = async (req, res, next) => {
-
+    
 }
