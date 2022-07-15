@@ -78,7 +78,7 @@ exports.register = async (req, res, next) => {
             }
         });
 
-        return res.status(200).json({data: { message: "Account created successfully, continue to login." }});
+        return res.status(200).json({ data: { message: "Account created successfully, continue to login." }});
     }
     catch(e) {
         console.log(e);

@@ -5,17 +5,8 @@ const prisma = require("../utils/prisma");
 
 exports.fetchTournaments = async (req, res, next) => {
     try {
-        const tournaments = await prisma.tournament.findMany({
-            where: {
-                cancelled: 0
-            }
-        });
-
-        res.status(200).json({
-            data: {
-                tournaments: tournaments
-            }
-        });
+        const tournaments = await prisma.tournament.findMany({ where: { cancelled: 0 }});
+        res.status(200).json({ data: { tournaments: tournaments }});
     }
     catch(e) {
         console.log(e);
@@ -52,7 +43,7 @@ exports.fetchTournament = async (req, res, next) => {
         if(!tournament)
             return next(new ServerError('Tournament with given ID does not exist', 404, 'RESOURCE_NOT_FOUND'));
 
-        return res.status(200).json({data: { tournament: tournament }});
+        return res.status(200).json({ data: { tournament: tournament }});
     }
     catch(e) {
         console.log(e);
@@ -97,12 +88,12 @@ exports.editTournament = async (req, res, next) => {
     if (!err.isEmpty()) 
         return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', err.array()));
 
-    const tournament = await prisma.tournament.findUnique({where: {id: Number.parseInt(req.params.id)}});
-
-    if(!tournament)
-        return next(new ServerError('Tournament with given ID does not exist', 404, 'RESOURCE_NOT_FOUND'));
-
     try {
+        const tournament = await prisma.tournament.findUnique({ where: {id: Number.parseInt(req.params.id) }});
+
+        if(!tournament)
+            return next(new ServerError('Tournament with given ID does not exist', 404, 'RESOURCE_NOT_FOUND'));
+
         await prisma.tournament.update({
             where: {id: Number.parseInt(req.params.id)},
             data: {
@@ -126,13 +117,13 @@ exports.editTournament = async (req, res, next) => {
     }
 }
 
-exports.cancelTournament = async (req, res, next) => {
-    const tournament = await prisma.tournament.findUnique({where: {id: Number.parseInt(req.params.id)}});
-
-    if(!tournament)
-        return next(new ServerError('Tournament with given ID does not exist', 404, 'RESOURCE_NOT_FOUND'));
-    
+exports.cancelTournament = async (req, res, next) => {    
     try {
+        const tournament = await prisma.tournament.findUnique({ where: {id: Number.parseInt(req.params.id) }});
+
+        if(!tournament)
+            return next(new ServerError('Tournament with given ID does not exist', 404, 'RESOURCE_NOT_FOUND'));
+
         await prisma.tournament.update({
             where: { id: Number.parseInt(req.params.id) },
             data: { cancelled: 1 }

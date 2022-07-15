@@ -1,86 +1,39 @@
 const express = require('express');
-const { body } = require('express-validator');
 
-const { fetchTournaments, fetchTournament, createTournament, editTournament, cancelTournament, updateResult } = require("../controllers/administrator");
+const Validators = require("../utils/validators");
+const Controllers = require("../controllers/administrator");
 
 const router = express.Router();
 
 const createTournamentValidator = [
-    body('name')
-        .trim()
-        .notEmpty()
-        .withMessage("Tournament name is required"),
-    body('description')
-        .trim()
-        .notEmpty()
-        .withMessage("Tournament description is required"),
-    body('sport')
-        .trim()
-        .notEmpty()
-        .withMessage("Sport name is required"),
-    body('team_size')
-        .trim()
-        .notEmpty()
-        .withMessage("Team size is required")
-        .isInt({ min: 1 })
-        .withMessage("Team size cannot be less that 1")
-        .toInt(),
-    body("event_date")
-        .trim()
-        .notEmpty()
-        .withMessage("Event date is required"),
-    body("deadline_date")
-        .trim()
-        .notEmpty()
-        .withMessage("Deadline date is required")
+    Validators.tournament_name,
+    Validators.description,
+    Validators.sport,
+    Validators.team_size,
+    Validators.event_date,
+    Validators.deadline_date
 ];
 
 const editTournamentValidator = [
-    body('name')
-        .trim()
-        .notEmpty()
-        .withMessage("Tournament name is required"),
-    body('description')
-        .trim()
-        .notEmpty()
-        .withMessage("Tournament description is required"),
-    body("event_date")
-        .trim()
-        .notEmpty()
-        .withMessage("Event date is required"),
-    body("deadline_date")
-        .trim()
-        .notEmpty()
-        .withMessage("Deadline date is required")
+    Validators.tournament_name,
+    Validators.description,
+    Validators.event_date,
+    Validators.deadline_date
 ];
 
 const resultValidator = [
-    body("team_id")
-        .trim()
-        .notEmpty()
-        .withMessage("Team ID is required")
-        .toInt(),
-    body("tournament_id")
-        .trim()
-        .notEmpty()
-        .withMessage("Torunament ID is required")
-        .toInt(),
-    body("result")
-        .trim()
-        .notEmpty()
-        .withMessage("Result is required")
-        .isInt({ min: 1, max: 4 })
-        .withMessage("Result invalid")
-        .toInt(),
+    Validators.team_id,
+    Validators.tournament_id,
+    Validators.result
 ]
 
-router.get("/tournaments", fetchTournaments);
-router.get("/tournaments/:id", fetchTournament);
+router.get("/tournaments", Controllers.fetchTournaments);
+router.get("/tournaments/:id", Controllers.fetchTournament);
 
-router.post("/tournaments/create", createTournamentValidator, createTournament);
-router.post("/tournaments/edit/:id", editTournamentValidator, editTournament);
-router.post("/tournaments/cancel/:id", cancelTournament);
+router.post("/tournaments/create", createTournamentValidator, Controllers.createTournament);
+router.post("/tournaments/edit/:id", editTournamentValidator, Controllers.editTournament);
+router.post("/tournaments/cancel/:id", Controllers.cancelTournament);
 
-router.post("/team/result", resultValidator, updateResult)
+router.post("/team/result", resultValidator, Controllers.updateResult)
 
 module.exports = router;

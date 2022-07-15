@@ -120,7 +120,7 @@ exports.applyTournament = async (req, res, next) => {
         return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', err.array()));
 
     try {
-        const tournament = await prisma.tournament.findUnique({where: { id: req.body.tournament_id }});
+        const tournament = await prisma.tournament.findUnique({ where: { id: req.body.tournament_id }});
 
         if(!tournament)
             return next(new ServerError('Tournament with given ID does not exist', 422, 'VALIDATION_FAILED'));
@@ -148,10 +148,9 @@ exports.applyTournament = async (req, res, next) => {
         const registeredEmails = result.map(item => item.email);
         const errors = Array.apply(null, Array(tournament.team_size)).map(() => false)
 
-        for(let i = 0 ; i < req.body.emails.length; i++) {
+        for(let i = 0 ; i < req.body.emails.length; i++) 
             if(!registeredEmails.includes(req.body.emails[i]))
                 errors[i] = true;
-        }
 
         if(errors.reduce((previous, current) => previous || current))
             return next(new ServerError('One or more provided emails not registered', 404, 'EMAILS_NOT_REGISTERED', errors));
