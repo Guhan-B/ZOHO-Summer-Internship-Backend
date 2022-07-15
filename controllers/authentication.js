@@ -16,19 +16,16 @@ exports.login = async (req, res, next) => {
         const user = await prisma.user.findUnique({where: {email: req.body.email}});
 
         if(!user)
-            return next(new ServerError('Email does not exist', 401, 'AUTHENTICATION_FAILED'));
+            return next(new ServerError('Email does not exist', 401, 'EMAIL_NOT_REGISTERED'));
         
         const isPasswordSame = await bcrypt.compare(req.body.password, user.password);
 
         if (!isPasswordSame) 
-            return next(new ServerError('Password does not match', 401, 'AUTHENTICATION_FAILED'));
+            return next(new ServerError('Password does not match', 401, 'WRONG_PASSWORD'));
         
         const token = jwt.sign(
             {
                 id: user.id,
-                email: user.email,
-                mobileNumber: user.mobile_number,
-                bloodGroup: user.blood_group,
                 role: user.role
             },
             process.env.ACCESS_TOKEN_KEY + user.password,
@@ -37,7 +34,19 @@ exports.login = async (req, res, next) => {
             }
         );
 
-        return res.status(200).json({data: { token: token }});
+
+        return res.status(200).json({
+            data: { 
+                token: token,
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    mobileNumber: user.mobile_number,
+                    bloodGroup: user.blood_group,
+                    role: user.role
+                }
+        }});
     }
     catch(e) {
         console.log(e);
@@ -55,7 +64,7 @@ exports.register = async (req, res, next) => {
         const user = await prisma.user.findUnique({ where: {email: req.body.email}});
         
         if(user)
-            return next(new ServerError('Email already exist', 422, 'VALIDATION_FAILED'));
+            return next(new ServerError('Email already exist', 422, 'EMAIL_ALREADY_REGISTERED'));
         
         const hash = await bcrypt.hash(req.body.password, 12);
 

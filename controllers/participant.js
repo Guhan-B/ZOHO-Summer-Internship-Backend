@@ -1,10 +1,10 @@
+const { PrismaClientKnownRequestError } = require("@prisma/client/runtime");
 const { validationResult } = require("express-validator");
 
 const { ServerError } = require("../utils/error");
 const prisma = require("../utils/prisma");
 
 exports.fetchAvailable = async (req, res, next) => {
-    // include deadline here ? ... think.
     try {
         const registeredTournaments = await prisma.member.findMany({
             where: {
@@ -17,14 +17,15 @@ exports.fetchAvailable = async (req, res, next) => {
 
         const registeredTournamentsIDs = registeredTournaments.map(item => item.tournament_id);
 
-        console.log(registeredTournamentsIDs);
-
         const availableTournaments = await prisma.tournament.findMany({
             where: {
                 id: {
                     notIn: registeredTournamentsIDs
                 },
-                cancelled: 0
+                cancelled: 0,
+                deadline_date: {
+                    gte: req.body.today
+                }
             }
         });
 
@@ -113,6 +114,7 @@ exports.editProfile = async (req, res, next) => {
 
 exports.applyTournament = async (req, res, next) => {
     const err = validationResult(req);
+    let team_id;
 
     if (!err.isEmpty()) 
         return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', err.array()));
@@ -123,6 +125,9 @@ exports.applyTournament = async (req, res, next) => {
         if(!tournament)
             return next(new ServerError('Tournament with given ID does not exist', 422, 'VALIDATION_FAILED'));
         
+        if(req.body.today > tournament.deadline_date) 
+            return next(new ServerError('Registeration Deadline is reached', 422, 'VALIDATION_FAILED'));
+
         if(req.body.emails.length !== tournament.team_size)
             return next(
                 new ServerError(`Team size is invalid. Required size is ${tournament.team_size}`, 422, 'VALIDATION_FAILED')
@@ -135,6 +140,7 @@ exports.applyTournament = async (req, res, next) => {
                 }
             },
             select: {
+                id: true,
                 email: true
             }
         });
@@ -158,12 +164,29 @@ exports.applyTournament = async (req, res, next) => {
             }
         });
 
-        // Insert members into table
+        team_id = team.id;
 
-        return res.status(200).json({data: { registeredEmails }});
+        const members = result.map(item => {
+            return {
+                user_id: item.id,
+                team_id: team.id,
+                tournament_id: tournament.id,
+                type: 0
+            };
+        });
+
+        members[0].type = 1;
+
+        await prisma.member.createMany({ data: members });
+
+        return res.status(200).json({data: { message: "Applied for tournament successfully." }});
     }
     catch(e) {
-        console.log(e);
+        if(e instanceof PrismaClientKnownRequestError && e.meta.target === "uc_member") {
+            await prisma.team.delete({where: {id: team_id}});
+            return next(new ServerError('One or more members already registered', 401, 'VALIDATION_FAILED'));
+        }
+        
         return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
     }
 }
