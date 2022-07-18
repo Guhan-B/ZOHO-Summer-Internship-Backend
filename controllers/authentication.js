@@ -5,11 +5,22 @@ const { validationResult } = require("express-validator");
 const { ServerError } = require("../utils/error");
 const prisma = require("../utils/prisma");
 
+exports.user = async (req, res, next) => {
+    return res.status(200).json({data: { user: [req.user].map(({ password, ...rest }) => rest)[0] }});
+}
+
 exports.login = async (req, res, next) => {
     const err = validationResult(req);
 
     if (!err.isEmpty()) {
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', err.array()));
+        const error = {
+            email: false, 
+            password: false
+        };
+
+        err.array().forEach(e => error[e.param] = true);
+
+        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
     }
 
     try {
@@ -34,10 +45,10 @@ exports.login = async (req, res, next) => {
             }
         );
 
+        res.cookie("token", token, { maxAge: 24 * 60 * 60 * 1000, httpOnly: true });
 
         return res.status(200).json({
             data: { 
-                token: token,
                 user: {
                     id: user.id,
                     name: user.name,
@@ -57,8 +68,19 @@ exports.login = async (req, res, next) => {
 exports.register = async (req, res, next) => {
     const err = validationResult(req);
 
-    if (!err.isEmpty()) 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', err.array()));
+    if (!err.isEmpty()) {
+        const error = {
+            name: false, 
+            mobileNumber: false, 
+            bloodGroup: false, 
+            email: false, 
+            password: false
+        };
+
+        err.array().forEach(e => error[e.param] = true);
+
+        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+    }
 
     try {
         const user = await prisma.user.findUnique({ where: {email: req.body.email}});
@@ -72,8 +94,8 @@ exports.register = async (req, res, next) => {
             data: {
                 name: req.body.name,
                 email: req.body.email,
-                mobile_number: req.body.mobile_number,
-                blood_group: req.body.blood_group,
+                mobile_number: req.body.mobileNumber,
+                blood_group: req.body.bloodGroup,
                 password: hash
             }
         });
@@ -84,6 +106,11 @@ exports.register = async (req, res, next) => {
         console.log(e);
         return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
     }
+}
+
+exports.logout = async (req, res, next) => {
+    res.clearCookie("token", {maxAge: 0});
+    return res.status(200).json({data: {message: "Logout successfull."}})
 }
 
 exports.resetPassword = async (req, res, next) => {

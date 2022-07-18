@@ -5,13 +5,11 @@ const { ServerError } = require('../utils/error');
 const prisma = require('../utils/prisma');
 
 module.exports = (role) => async (req, res, next) => {
-    let token = req.get('Authorization');
+    const token = req.cookies.token;
 
     if (!token) {
         return next(new ServerError('Access token Missing', 401, 'AUTHENTICATION_FAILED'));
     }
-
-    token = token.split(' ')[1];
 
     try {
         const decoded = JwtDecode(token);

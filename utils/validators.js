@@ -1,6 +1,6 @@
 const { body } = require("express-validator");
 
-exports.user_name = body("name")
+exports.userName = body("name")
   .trim()
   .notEmpty()
   .withMessage("Name is required");
@@ -19,14 +19,14 @@ exports.password = body("password")
   .isLength({ min: 8 })
   .withMessage("Passowrd should be minimum 8 characters long");
 
-exports.mobile_number = body('mobile_number')
+exports.mobileNumber = body('mobileNumber')
   .trim()
   .notEmpty()
   .withMessage("Mobile Number is required")
   .isLength({ min: 10, max: 10 })
   .withMessage("Mobile Number is badly formated");
 
-exports.blood_group = body('blood_group')
+exports.bloodGroup = body('bloodGroup')
   .trim()
   .notEmpty()
   .withMessage("Blood Group is required")

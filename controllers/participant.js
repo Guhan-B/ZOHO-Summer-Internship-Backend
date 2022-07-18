@@ -82,10 +82,6 @@ exports.fetchRegistered = async (req, res, next) => {
     }
 }
 
-exports.fetchProfile = async (req, res, next) => {
-    return res.status(200).json({data: { user: [req.user].map(({ password, role, ...rest }) => rest)[0] }});
-}
-
 exports.editProfile = async (req, res, next) => {
     const err = validationResult(req);
 

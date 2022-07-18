@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
+const cookieParser = require("cookie-parser");
 
 const errorHandler = require("./middlewares/error");
 const accessHandler = require("./middlewares/authentication");
@@ -15,7 +16,8 @@ const app = express();
 
 app.use(express.json());
 app.use(helmet());
-app.use(cors());
+app.use(cors({credentials: true, origin: "http://localhost:3000"}));
+app.use(cookieParser());
 
 app.use("/authentication", authenticationRoutes);
 app.use("/administrator", accessHandler([1]), administratorRoutes);
