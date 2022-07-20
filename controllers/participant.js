@@ -8,7 +8,7 @@ exports.fetchAvailable = async (req, res, next) => {
     try {
         const registeredTournaments = await prisma.member.findMany({
             where: {
-                user_id: req.user.id
+                email: req.user.email
             },
             select: {
                 tournament_id: true
@@ -17,17 +17,18 @@ exports.fetchAvailable = async (req, res, next) => {
 
         const registeredTournamentsIDs = registeredTournaments.map(item => item.tournament_id);
 
-        const availableTournaments = await prisma.tournament.findMany({
+        let availableTournaments = await prisma.tournament.findMany({
             where: {
                 id: {
                     notIn: registeredTournamentsIDs
                 },
                 cancelled: 0,
-                deadline_date: {
-                    gte: req.body.today
-                }
             }
         });
+
+        const today = new Date();
+
+        availableTournaments = availableTournaments.filter(item => new Date(item.deadline_date) >= today);
 
         return res.status(200).json({
             data: {
@@ -44,22 +45,32 @@ exports.fetchAvailable = async (req, res, next) => {
 exports.fetchRegistered = async (req, res, next) => {
     try {
         const result = await prisma.member.findMany({
-            where: { user_id: req.user.id },
+            where: { email: req.user.email },
             select: {
-                tournament: true,
-                team: {
-                    select: {
+                tournament: {
+                    select : {
                         id: true,
                         name: true,
-                        result: true,
-                        member: {
+                        sport: true,
+                        description: true,
+                        event_date: true,
+                        deadline_date: true,
+                        cancelled: true,
+                        team: {
                             select: {
-                                type: true,
-                                user: {
+                                id: true,
+                                name: true,
+                                result: true,
+                                leader_id: true,
+                                member: {
                                     select: {
-                                        id: true,
-                                        email: true,
-                                        name: true
+                                        user: {
+                                            select: {
+                                                id: true,
+                                                name: true,
+                                                email: true
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -69,12 +80,17 @@ exports.fetchRegistered = async (req, res, next) => {
             }
         });
 
-        const tournaments = result.map(item => {
-            item.tournament.team = item.team;
-            return item.tournament;
+        console.log(result);
+
+        const tournaments = result.map(item_1 => {
+            item_1.tournament.team[0].member = item_1.tournament.team[0].member.map(item_2 => {
+                return {...item_2.user};
+            })
+            item_1.tournament.team = item_1.tournament.team[0];
+            return item_1.tournament;
         });
 
-        return res.status(200).json({ data: { tournaments: tournaments }});
+        return res.status(200).json({ data: { tournaments }});
     }
     catch(e) {
         console.log(e);
@@ -85,8 +101,18 @@ exports.fetchRegistered = async (req, res, next) => {
 exports.editProfile = async (req, res, next) => {
     const err = validationResult(req);
 
-    if (!err.isEmpty()) 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', err.array()));
+    if (!err.isEmpty()) {
+        const error = {
+            name: false, 
+            mobileNumber: false, 
+            bloodGroup: false, 
+            email: false, 
+        };
+
+        err.array().forEach(e => error[e.param] = true);
+
+        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+    }
 
     try {
         await prisma.user.update({
@@ -95,8 +121,8 @@ exports.editProfile = async (req, res, next) => {
             },
             data: {
                 name: req.body.name,
-                mobile_number: req.body.mobile_number,
-                blood_group: req.body.blood_group,
+                mobile_number: req.body.mobileNumber,
+                blood_group: req.body.bloodGroup,
             }
         });
 
@@ -110,78 +136,96 @@ exports.editProfile = async (req, res, next) => {
 
 exports.applyTournament = async (req, res, next) => {
     const err = validationResult(req);
-    let team_id;
 
-    if (!err.isEmpty()) 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', err.array()));
+    if (!err.isEmpty()) {
+        const error = {
+            tournamentId: false, 
+            teamName: false, 
+            emails: false, 
+        };
+
+        err.array().forEach(e => error[e.param] = true);
+
+        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+    }
 
     try {
-        const tournament = await prisma.tournament.findUnique({ where: { id: req.body.tournament_id }});
+        const tournament = await prisma.tournament.findUnique({ where: { id: req.body.tournamentId }});
 
         if(!tournament)
             return next(new ServerError('Tournament with given ID does not exist', 422, 'VALIDATION_FAILED'));
         
-        if(req.body.today > tournament.deadline_date) 
-            return next(new ServerError('Registeration Deadline is reached', 422, 'VALIDATION_FAILED'));
-
         if(req.body.emails.length !== tournament.team_size)
-            return next(
-                new ServerError(`Team size is invalid. Required size is ${tournament.team_size}`, 422, 'VALIDATION_FAILED')
-            );
+            return next(new ServerError(`Team size is invalid. Required size is ${tournament.team_size}`, 422, 'VALIDATION_FAILED'));
         
-        const result = await prisma.user.findMany({
-            where: {
-                email: {
-                    in: req.body.emails
-                }
-            },
+        let result = await prisma.member.findMany({
             select: {
-                id: true,
                 email: true
+            },
+            where: {
+                tournament_id: tournament.id,
+                email: {
+                    in: req.body.email
+                }
             }
+        });
+
+        if(result.length !== 0) {
+            result = result.map(item => item.email);
+            const emails = Array.apply(null, Array(req.body.emails.length)).map(() => false);
+            for(let i = 0; i < emails.length; i++) {
+                if(result.includes(req.body.emails[i])) 
+                    emails[i] = true;
+            }
+            const error = {
+                tournamentId: false, 
+                teamName: false, 
+                emails: emails, 
+            };
+            return next(new ServerError('One or more members already registered', 401, 'EMAILS_ALREADY_REGISTERED', error));
+        }
+        
+        const leaderUser= await prisma.user.findUnique({ where:{ email: req.body.emails[0] }});
+
+        result = await prisma.user.findMany({
+            where: { email:{ in: req.body.emails }, role: 0 },
+            select: { email: true }
         });
 
         const registeredEmails = result.map(item => item.email);
-        const errors = Array.apply(null, Array(tournament.team_size)).map(() => false)
+        const passiveUserData = [];
 
-        for(let i = 0 ; i < req.body.emails.length; i++) 
-            if(!registeredEmails.includes(req.body.emails[i]))
-                errors[i] = true;
-
-        if(errors.reduce((previous, current) => previous || current))
-            return next(new ServerError('One or more provided emails not registered', 404, 'EMAILS_NOT_REGISTERED', errors));
+        for(let i = 0 ; i < tournament.team_size; i++) {
+            if(registeredEmails.includes(req.body.emails[i]) === false) {
+                passiveUserData.push({ name: req.body.names[i], email: req.body.emails[i], active: 0, role: 0 });
+            }
+        }
+        if(passiveUserData.length > 0)
+            await prisma.user.createMany({ data: passiveUserData });
         
         const team = await prisma.team.create({
             data: {
-                name: req.body.team_name,
+                name: req.body.teamName,
                 size: tournament.team_size,
-                tournament_id: tournament.id
+                tournament_id: tournament.id,
+                leader_id: leaderUser.id
             }
         });
 
-        team_id = team.id;
-
-        const members = result.map(item => {
+        const memberData = req.body.emails.map(email => {
             return {
-                user_id: item.id,
+                email: email,
                 team_id: team.id,
                 tournament_id: tournament.id,
-                type: 0
             };
         });
 
-        members[0].type = 1;
+        await prisma.member.createMany({ data: memberData });
 
-        await prisma.member.createMany({ data: members });
-
-        return res.status(200).json({data: { message: "Applied for tournament successfully." }});
+        return res.status(200).json({data: { message: "Applied for tournament successfully" }});
     }
     catch(e) {
-        if(e instanceof PrismaClientKnownRequestError && e.meta.target === "uc_member") {
-            await prisma.team.delete({where: {id: team_id}});
-            return next(new ServerError('One or more members already registered', 401, 'VALIDATION_FAILED'));
-        }
-        
+        console.log(e);    
         return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
     }
 }

@@ -12,15 +12,14 @@ const editValidator = [
 ];
 
 const applyValidator = [
-    Validators.tournament_id,
-    Validators.team_name,
-    Validators.member_emails,
+    Validators.tournamentId,
+    Validators.teamName,
+    Validators.memberEmails,
 ];
 
-
-router.get("/available", Controllers.fetchAvailable);
 router.get("/registered", Controllers.fetchRegistered);
 
+router.post("/available", Controllers.fetchAvailable);
 router.post("/profile", editValidator, Controllers.editProfile);
 router.post("/apply", applyValidator, Controllers.applyTournament);
 

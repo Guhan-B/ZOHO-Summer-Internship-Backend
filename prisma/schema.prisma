@@ -8,19 +8,22 @@ datasource db {
 }
 
 model team {
-  id            Int        @id @default(autoincrement())
+  id            Int        @id @unique(map: "id") @default(autoincrement())
   name          String     @db.VarChar(100)
   size          Int
   result        Int        @default(0)
   tournament_id Int
+  leader_id     Int
+  user          user       @relation(fields: [leader_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_team_user")
   tournament    tournament @relation(fields: [tournament_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_team_tournament")
   member        member[]
 
   @@index([tournament_id], map: "fk_team_tournament")
+  @@index([leader_id], map: "fk_team_user")
 }
 
 model tournament {
-  id            Int      @id @default(autoincrement())
+  id            Int      @id @unique(map: "id") @default(autoincrement())
   name          String   @db.VarChar(100)
   sport         String   @db.VarChar(100)
   description   String   @db.VarChar(200)
@@ -33,27 +36,28 @@ model tournament {
 }
 
 model user {
-  id            Int      @id @default(autoincrement())
-  name          String   @db.VarChar(100)
-  mobile_number String   @db.VarChar(20)
-  blood_group   String   @db.VarChar(5)
+  id            Int      @id @unique(map: "id") @default(autoincrement())
+  name          String?  @db.VarChar(100)
+  mobile_number String?  @db.VarChar(20)
+  blood_group   String?  @db.VarChar(5)
   email         String   @unique(map: "email") @db.VarChar(100)
-  password      String   @db.VarChar(256)
+  password      String?  @db.VarChar(256)
   role          Int      @default(0)
+  active        Int
   member        member[]
+  team          team[]
 }
 
 model member {
-  id            Int        @id @default(autoincrement())
-  user_id       Int
+  id            Int        @id @unique(map: "id") @default(autoincrement())
+  email         String     @db.VarChar(100)
   team_id       Int
   tournament_id Int
-  type          Int
+  user          user       @relation(fields: [email], references: [email], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_user")
   team          team       @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_team")
   tournament    tournament @relation(fields: [tournament_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_tournament")
-  user          user       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_user")
 
-  @@unique([tournament_id, user_id], map: "uc_member")
+  @@unique([tournament_id, email], map: "uc_member")
   @@index([team_id], map: "fk_member_team")
-  @@index([user_id], map: "fk_member_user")
+  @@index([email], map: "fk_member_user")
 }

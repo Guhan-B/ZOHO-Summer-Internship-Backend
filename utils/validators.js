@@ -39,7 +39,7 @@ exports.bloodGroup = body('bloodGroup')
       return true;
   });
 
-exports.tournament_name = body('name')
+exports.tournamentName = body('name')
   .trim()
   .notEmpty()
   .withMessage("Tournament name is required");
@@ -54,7 +54,7 @@ exports.sport = body('sport')
   .notEmpty()
   .withMessage("Sport Name is required");
 
-exports.team_size = body('team_size')
+exports.teamSize = body('teamSize')
   .trim()
   .notEmpty()
   .withMessage("Team size is required")
@@ -62,23 +62,23 @@ exports.team_size = body('team_size')
   .withMessage("Team size cannot be less that 1")
   .toInt();
 
-exports.event_date = body("event_date")
+exports.eventDate = body("eventDate")
   .trim()
   .notEmpty()
   .withMessage("Event date is required");
 
-exports.deadline_date = body("deadline_date")
+exports.deadlineDate = body("deadlineDate")
   .trim()
   .notEmpty()
   .withMessage("Deadline date is required");
 
-exports.team_id = body("team_id")
+exports.teamId = body("teamId")
   .trim()
   .notEmpty()
   .withMessage("Team ID is required")
   .toInt();
 
-exports.tournament_id = body("tournament_id")
+exports.tournamentId = body("tournamentId")
   .trim()
   .notEmpty()
   .withMessage("Torunament ID is required")
@@ -92,12 +92,12 @@ exports.result = body("result")
   .withMessage("Result is invalid")
   .toInt();
 
-exports.team_name = body("team_name")
+exports.teamName = body("teamName")
   .trim()
   .notEmpty()
   .withMessage("Team name is required");
 
-exports.member_emails = body("emails")
+exports.memberEmails = body("emails")
   .notEmpty()
   .withMessage("Participant emails are required");
 

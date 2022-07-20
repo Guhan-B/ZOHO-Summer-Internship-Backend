@@ -6,24 +6,24 @@ const Controllers = require("../controllers/administrator");
 const router = express.Router();
 
 const createTournamentValidator = [
-    Validators.tournament_name,
+    Validators.tournamentName,
     Validators.description,
     Validators.sport,
-    Validators.team_size,
-    Validators.event_date,
-    Validators.deadline_date
+    Validators.teamSize,
+    Validators.eventDate,
+    Validators.deadlineDate
 ];
 
 const editTournamentValidator = [
-    Validators.tournament_name,
+    Validators.tournamentName,
     Validators.description,
-    Validators.event_date,
-    Validators.deadline_date
+    Validators.eventDate,
+    Validators.deadlineDate
 ];
 
 const resultValidator = [
-    Validators.team_id,
-    Validators.tournament_id,
+    Validators.teamId,
+    Validators.tournamentId,
     Validators.result
 ]
 

@@ -5,7 +5,7 @@ const prisma = require("../utils/prisma");
 
 exports.fetchTournaments = async (req, res, next) => {
     try {
-        const tournaments = await prisma.tournament.findMany({ where: { cancelled: 0 }});
+        const tournaments = await prisma.tournament.findMany();
         res.status(200).json({ data: { tournaments: tournaments }});
     }
     catch(e) {
@@ -21,18 +21,13 @@ exports.fetchTournament = async (req, res, next) => {
             include: {
                 team: {
                     select: {
+                        id: true,
                         name: true,
-                        result: true,
-                        member: {
+                        user: {
                             select: {
-                                type: true,
-                                user: {
-                                    select: {
-                                        id: true,
-                                        email: true,
-                                        mobile_number: true
-                                    }
-                                }
+                                name: true,
+                                email: true,
+                                mobile_number: true,
                             }
                         }
                     }
@@ -54,8 +49,20 @@ exports.fetchTournament = async (req, res, next) => {
 exports.createTournament = async (req, res, next) => {
     const err = validationResult(req);
 
-    if (!err.isEmpty()) 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', err.array()));
+    if (!err.isEmpty()) {
+        const error = {
+            name: false, 
+            description: false,
+            sport: false,
+            teamSize: false,
+            eventDate: false,
+            deadlineDate: false
+        };
+
+        err.array().forEach(e => error[e.param] = true);
+
+        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+    }
     
     try {
         const tournament = await prisma.tournament.create({
@@ -63,9 +70,9 @@ exports.createTournament = async (req, res, next) => {
                 name: req.body.name,
                 description: req.body.description,
                 sport: req.body.sport,
-                team_size: req.body.team_size,
-                event_date: req.body.event_date,
-                deadline_date: req.body.deadline_date
+                team_size: req.body.teamSize,
+                event_date: req.body.eventDate,
+                deadline_date: req.body.deadlineDate
             }
         });
 
@@ -85,8 +92,20 @@ exports.createTournament = async (req, res, next) => {
 exports.editTournament = async (req, res, next) => {
     const err = validationResult(req);
 
-    if (!err.isEmpty()) 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', err.array()));
+    if (!err.isEmpty()) {
+        const error = {
+            name: false, 
+            description: false,
+            sport: false,
+            teamSize: false,
+            eventDate: false,
+            deadlineDate: false
+        };
+
+        err.array().forEach(e => error[e.param] = true);
+
+        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+    }
 
     try {
         const tournament = await prisma.tournament.findUnique({ where: {id: Number.parseInt(req.params.id) }});
