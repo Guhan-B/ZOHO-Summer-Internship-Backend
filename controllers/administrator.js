@@ -23,6 +23,7 @@ exports.fetchTournament = async (req, res, next) => {
                     select: {
                         id: true,
                         name: true,
+                        result: true,
                         user: {
                             select: {
                                 name: true,
@@ -36,7 +37,7 @@ exports.fetchTournament = async (req, res, next) => {
         });
 
         if(!tournament)
-            return next(new ServerError('Tournament with given ID does not exist', 404, 'RESOURCE_NOT_FOUND'));
+            return next(new ServerError('Tournament does not exist', 404, 'RESOURCE_NOT_FOUND'));
 
         return res.status(200).json({ data: { tournament: tournament }});
     }
@@ -61,7 +62,7 @@ exports.createTournament = async (req, res, next) => {
 
         err.array().forEach(e => error[e.param] = true);
 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
     
     try {
@@ -78,7 +79,7 @@ exports.createTournament = async (req, res, next) => {
 
         return res.status(200).json({
             data: {
-                message: "Trounament has been created successfully.",
+                message: "Trounament has been created successfully",
                 tournament: tournament
             }
         });
@@ -104,28 +105,28 @@ exports.editTournament = async (req, res, next) => {
 
         err.array().forEach(e => error[e.param] = true);
 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
 
     try {
         const tournament = await prisma.tournament.findUnique({ where: {id: Number.parseInt(req.params.id) }});
 
         if(!tournament)
-            return next(new ServerError('Tournament with given ID does not exist', 404, 'RESOURCE_NOT_FOUND'));
+            return next(new ServerError('Tournament does not exist', 404, 'RESOURCE_NOT_FOUND'));
 
         await prisma.tournament.update({
             where: {id: Number.parseInt(req.params.id)},
             data: {
                 name: req.body.name,
                 description: req.body.description,
-                event_date: req.body.event_date,
-                deadline_date: req.body.deadline_date
+                event_date: req.body.eventDate,
+                deadline_date: req.body.deadlineDate
             }
         });
     
         return res.status(200).json({
             data: { 
-                message: "Tournament details edited successfully.", 
+                message: "Tournament details edited successfully", 
                 tournament: tournament 
             }
         });
@@ -141,14 +142,14 @@ exports.cancelTournament = async (req, res, next) => {
         const tournament = await prisma.tournament.findUnique({ where: {id: Number.parseInt(req.params.id) }});
 
         if(!tournament)
-            return next(new ServerError('Tournament with given ID does not exist', 404, 'RESOURCE_NOT_FOUND'));
+            return next(new ServerError('Tournament does not exist', 404, 'RESOURCE_NOT_FOUND'));
 
         await prisma.tournament.update({
             where: { id: Number.parseInt(req.params.id) },
             data: { cancelled: 1 }
         });
 
-        return res.status(200).json({ data: { message: "Tournament has been cancelled successfully." }});
+        return res.status(200).json({ data: { message: "Tournament has been cancelled successfully" }});
     }
     catch(e) {
         console.log(e);
@@ -156,23 +157,43 @@ exports.cancelTournament = async (req, res, next) => {
     }
 }
 
+// For Reference
+// const RESULTS = [
+//     { label: "PENDING", value: 0, class: styles.pending },
+//     { label: "NOT PARTICIPATED", value: 1, class: styles.not_participated  },
+//     { label: "DISQUALIFIED", value: 2, class: styles.disqualified  },
+//     { label: "LOST", value: 3, class: styles.lost },
+//     { label: "WINNER", value: 4, class: styles.winner },
+// ];
+
 exports.updateResult = async (req, res, next) => {
     const err = validationResult(req);
 
     if (!err.isEmpty()) 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', err.array()));
+        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', err.array()));
+        
     try {
-        const team = await prisma.team.findFirst({where: {id: req.body.team_id, tournament_id: req.body.tournament_id}});
+        const team = await prisma.team.findFirst({where: {id: req.body.teamId, tournament_id: req.body.tournamentId}});
 
         if(!team)
-            return next(new ServerError("Team and Tournament with given ID's is invalid", 404, 'RESOURCE_NOT_FOUND'));
+            return next(new ServerError("The team is not registered for the given tournament", 404, 'RESOURCE_NOT_FOUND'));
+
+        // Check for another winner team
+        if(req.body.result === 4) {
+            const winner = await prisma.team.findFirst({
+                where: {id: req.body.teamId, tournament_id: req.body.tournamentId, result: 4}
+            });
+
+            if(winner)
+                return next(new ServerError('Already assigned a winner for this tournament', 422, 'VALIDATION_FAILED'));
+        }
         
         await prisma.team.update({
-            where: {id: req.body.team_id, tournament_id: req.body.tournament_id},
+            where: {id: req.body.teamId },
             data: { result: req.body.result }
         });
 
-        return res.status(200).json({ data: { message: "Result updated successfully." }});
+        return res.status(200).json({ data: { message: "Result updated successfully" }});
     }
     catch(e){
         console.log(e);

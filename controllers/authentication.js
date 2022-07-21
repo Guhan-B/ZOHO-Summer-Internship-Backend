@@ -31,19 +31,19 @@ exports.login = async (req, res, next) => {
 
         err.array().forEach(e => error[e.param] = true);
 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
 
     try {
         const user = await prisma.user.findUnique({where: {email: req.body.email}});
 
         if(!user || user.active === 0)
-            return next(new ServerError('Email is not registered', 401, 'EMAIL_NOT_REGISTERED'));
+            return next(new ServerError('Email is not registered', 401, 'VALIDATION_FAILED', { email: true }));
         
         const isPasswordSame = await bcrypt.compare(req.body.password, user.password);
 
         if (!isPasswordSame) 
-            return next(new ServerError('Password does not match', 401, 'WRONG_PASSWORD'));
+            return next(new ServerError('Password does not match', 401, 'VALIDATION_FAILED', { password: true }));
         
         const token = jwt.sign(
             {
@@ -90,14 +90,14 @@ exports.register = async (req, res, next) => {
 
         err.array().forEach(e => error[e.param] = true);
 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
 
     try {
         const user = await prisma.user.findUnique({ where: {email: req.body.email}});
         
         if(user && user.active === 1)
-            return next(new ServerError('Email already registered', 422, 'EMAIL_ALREADY_REGISTERED'));
+            return next(new ServerError('Email is already registered', 422, 'VALIDATION_FAILED', { email: true }));
         
         const hash = await bcrypt.hash(req.body.password, 12);
 
@@ -129,7 +129,7 @@ exports.register = async (req, res, next) => {
         }
 
 
-        return res.status(200).json({ data: { message: "Account created successfully, continue to login." }});
+        return res.status(200).json({ data: { message: "Account created successfully, continue to login" }});
     }
     catch(e) {
         console.log(e);
@@ -152,7 +152,7 @@ exports.resetPassword = async (req, res, next) => {
 
         err.array().forEach(e => error[e.param] = true);
 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('Password is invalid', 422, 'VALIDATION_FAILED', error));
     }
 
     try {

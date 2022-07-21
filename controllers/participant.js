@@ -1,4 +1,3 @@
-const { PrismaClientKnownRequestError } = require("@prisma/client/runtime");
 const { validationResult } = require("express-validator");
 
 const { ServerError } = require("../utils/error");
@@ -80,8 +79,6 @@ exports.fetchRegistered = async (req, res, next) => {
             }
         });
 
-        console.log(result);
-
         const tournaments = result.map(item_1 => {
             item_1.tournament.team[0].member = item_1.tournament.team[0].member.map(item_2 => {
                 return {...item_2.user};
@@ -111,7 +108,7 @@ exports.editProfile = async (req, res, next) => {
 
         err.array().forEach(e => error[e.param] = true);
 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
 
     try {
@@ -126,7 +123,7 @@ exports.editProfile = async (req, res, next) => {
             }
         });
 
-        return res.status(200).json({data: { message: "Profile updated successfully." }});
+        return res.status(200).json({data: { message: "Profile updated successfully" }});
     }
     catch(e) {
         console.log(e);
@@ -146,16 +143,25 @@ exports.applyTournament = async (req, res, next) => {
 
         err.array().forEach(e => error[e.param] = true);
 
-        return next(new ServerError('Validation failed', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
 
     try {
         const tournament = await prisma.tournament.findUnique({ where: { id: req.body.tournamentId }});
 
         if(!tournament)
-            return next(new ServerError('Tournament with given ID does not exist', 422, 'VALIDATION_FAILED'));
+            return next(new ServerError('Tournament does not exist', 422, 'VALIDATION_FAILED'));
+
+        if(tournament.cancelled === 1)
+            return next(new ServerError('Tournament has been cancelled', 422, 'VALIDATION_FAILED'));
+
+        if(new Date() > new Date(tournament.deadline_date))
+            return next(new ServerError("Cannot apply to tournament. Deadline reached", 422, "VALIDATION_FAILED"));
         
         if(req.body.emails.length !== tournament.team_size)
+            return next(new ServerError(`Team size is invalid. Required size is ${tournament.team_size}`, 422, 'VALIDATION_FAILED'));
+
+        if(req.body.names.length !== tournament.team_size)
             return next(new ServerError(`Team size is invalid. Required size is ${tournament.team_size}`, 422, 'VALIDATION_FAILED'));
         
         let result = await prisma.member.findMany({
@@ -172,17 +178,25 @@ exports.applyTournament = async (req, res, next) => {
 
         if(result.length !== 0) {
             result = result.map(item => item.email);
+
             const emails = Array.apply(null, Array(req.body.emails.length)).map(() => false);
-            for(let i = 0; i < emails.length; i++) {
-                if(result.includes(req.body.emails[i])) 
+            const names = Array.apply(null, Array(req.body.emails.length)).map(() => false);
+            
+            for(let i = 0; i < tournament.team_size; i++) {
+                if(result.includes(req.body.emails[i])) {
                     emails[i] = true;
+                    names[i] = true;
+                } 
             }
+
             const error = {
                 tournamentId: false, 
                 teamName: false, 
                 emails: emails, 
+                names: names
             };
-            return next(new ServerError('One or more members already registered', 401, 'EMAILS_ALREADY_REGISTERED', error));
+            
+            return next(new ServerError('One or more members already registered', 422, 'VALIDATION_FAILED', error));
         }
         
         const leaderUser= await prisma.user.findUnique({ where:{ email: req.body.emails[0] }});

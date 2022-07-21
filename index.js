@@ -15,7 +15,6 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
-app.use(helmet());
 app.use(cors({credentials: true, origin: "http://localhost:3000"}));
 app.use(cookieParser());
 
@@ -30,24 +29,3 @@ const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
     console.log(`[SUCCESS] server is running at ${PORT}`);
 });
-
-/*
-Authentication
-- register
-- login
-- reset password
-
-Participant
-- fetch avaliable tournaments
-- fetch registered tournaments
-- apply tournament
-- edit profile
-
-Administrator
-- fetch tournaments
-- fetch tournament
-- create tournament
-- cancel tournament
-- edit tournament
-- update result
-*/
