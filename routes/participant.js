@@ -17,10 +17,15 @@ const applyValidator = [
     Validators.memberEmails,
 ];
 
+const withdrawValidator =  [
+    Validators.tournamentId
+]
+
 router.get("/registered", Controllers.fetchRegistered);
 
 router.post("/available", Controllers.fetchAvailable);
 router.post("/profile", editValidator, Controllers.editProfile);
 router.post("/apply", applyValidator, Controllers.applyTournament);
+router.post("/withdraw", withdrawValidator, Controllers.withdraw);
 
 module.exports = router;

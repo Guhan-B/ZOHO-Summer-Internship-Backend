@@ -42,34 +42,21 @@ exports.fetchAvailable = async (req, res, next) => {
 }
 
 exports.fetchRegistered = async (req, res, next) => {
+    console.log(req.user);
     try {
         const result = await prisma.member.findMany({
             where: { email: req.user.email },
             select: {
-                tournament: {
-                    select : {
-                        id: true,
-                        name: true,
-                        sport: true,
-                        description: true,
-                        event_date: true,
-                        deadline_date: true,
-                        cancelled: true,
-                        team: {
+                tournament: true,
+                team: {
+                    include: {
+                        member: {
                             select: {
-                                id: true,
-                                name: true,
-                                result: true,
-                                leader_id: true,
-                                member: {
+                                user: {
                                     select: {
-                                        user: {
-                                            select: {
-                                                id: true,
-                                                name: true,
-                                                email: true
-                                            }
-                                        }
+                                        id: true,
+                                        name: true,
+                                        email: true
                                     }
                                 }
                             }
@@ -80,12 +67,9 @@ exports.fetchRegistered = async (req, res, next) => {
         });
 
         const tournaments = result.map(item_1 => {
-            item_1.tournament.team[0].member = item_1.tournament.team[0].member.map(item_2 => {
-                return {...item_2.user};
-            })
-            item_1.tournament.team = item_1.tournament.team[0];
-            return item_1.tournament;
-        });
+            item_1.team.member = item_1.team.member.map(item_2 => item_2.user);
+            return {...item_1.tournament, team: item_1.team};
+        })
 
         return res.status(200).json({ data: { tournaments }});
     }
@@ -112,6 +96,8 @@ exports.editProfile = async (req, res, next) => {
     }
 
     try {
+        console.log(req.body);
+
         await prisma.user.update({
             where: {
                 id: req.user.id
@@ -171,7 +157,7 @@ exports.applyTournament = async (req, res, next) => {
             where: {
                 tournament_id: tournament.id,
                 email: {
-                    in: req.body.email
+                    in: req.body.emails
                 }
             }
         });
@@ -237,6 +223,64 @@ exports.applyTournament = async (req, res, next) => {
         await prisma.member.createMany({ data: memberData });
 
         return res.status(200).json({data: { message: "Applied for tournament successfully" }});
+    }
+    catch(e) {
+        console.log(e);    
+        return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
+    }
+}
+
+exports.withdraw = async (req, res, next) => {
+    const err = validationResult(req);
+
+    if (!err.isEmpty()) 
+        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', err.array()));
+
+    try {
+        const result = await prisma.member.findUnique({
+            where: {
+                tournament_id_email: {
+                    email: req.user.email,
+                    tournament_id: req.body.tournamentId
+                }
+            },
+            select: {
+                team : {
+                    select: {
+                        id: true,
+                        leader_id: true
+                    }
+                },
+                tournament: {
+                    select: {
+                        deadline_date: true
+                    }
+                }
+            }
+        });
+
+        if(!result)
+            return next(new ServerError('Your are not registered to this tournament', 422, 'VALIDATION_FAILED')); 
+
+        if(req.user.id !== result.team.leader_id)
+            return next(new ServerError('Your are not leader of this team', 422, 'VALIDATION_FAILED')); 
+        
+        if(new Date() > new Date(result.tournament.deadline_date))
+            return next(new ServerError('Cannot withdraw deadline is reached', 422, 'VALIDATION_FAILED')); 
+
+        await prisma.member.deleteMany({
+            where: {
+                team_id: result.team.id
+            },
+        });
+
+        await prisma.team.delete({
+            where: {
+                id: result.team.id
+            }
+        });
+
+        return res.status(200).json({ data: { message: "Withdrawed from tournament successfully" } });
     }
     catch(e) {
         console.log(e);    

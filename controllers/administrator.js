@@ -149,6 +149,15 @@ exports.cancelTournament = async (req, res, next) => {
             data: { cancelled: 1 }
         });
 
+        await prisma.team.updateMany({
+            where: {
+                tournament_id: Number.parseInt(req.params.id)
+            },
+            data: {
+                result: 5
+            }
+        })
+
         return res.status(200).json({ data: { message: "Tournament has been cancelled successfully" }});
     }
     catch(e) {
@@ -158,7 +167,7 @@ exports.cancelTournament = async (req, res, next) => {
 }
 
 // For Reference
-// const RESULTS = [
+// RESULTS = [
 //     { label: "PENDING", value: 0, class: styles.pending },
 //     { label: "NOT PARTICIPATED", value: 1, class: styles.not_participated  },
 //     { label: "DISQUALIFIED", value: 2, class: styles.disqualified  },
@@ -178,10 +187,11 @@ exports.updateResult = async (req, res, next) => {
         if(!team)
             return next(new ServerError("The team is not registered for the given tournament", 404, 'RESOURCE_NOT_FOUND'));
 
-        // Check for another winner team
-        if(req.body.result === 4) {
+        console.log(req.body.result);
+
+        if(req.body.result == 4) {
             const winner = await prisma.team.findFirst({
-                where: {id: req.body.teamId, tournament_id: req.body.tournamentId, result: 4}
+                where: {tournament_id: req.body.tournamentId, result: 4}
             });
 
             if(winner)
