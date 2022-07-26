@@ -56,9 +56,20 @@ exports.login = async (req, res, next) => {
             },
             process.env.ACCESS_TOKEN_KEY + user.password,
             {
-                expiresIn: '24h'
+                expiresIn: '24h',
+                algorithm: "HS256",
             }
         );
+
+        await prisma.token.deleteMany({ where: { userId: user.id }});
+
+        await prisma.token.create({
+            data: {
+                userId: user.id,
+                token: token,
+                createdAt: new Date().toUTCString() 
+            }
+        });
 
         res.cookie("token", token, { maxAge: 24 * 60 * 60 * 1000, httpOnly: true });
 

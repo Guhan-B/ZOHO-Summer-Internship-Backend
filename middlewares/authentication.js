@@ -15,7 +15,11 @@ module.exports = (role) => async (req, res, next) => {
         const decoded = JwtDecode(token);
 
         const user = await prisma.user.findUnique({ where: {id: decoded.id}});
+        const DBToken = await prisma.token.findUnique({ where: {userId: decoded.id}});
 
+        if(token !== DBToken.token)
+            return next(new ServerError('Token error - Token Invalid', 401, 'AUTHENTICATION_FAILED'));
+            
         jwt.verify(token, process.env.ACCESS_TOKEN_KEY + user.password, async (err) => {
             if (err) {
                 return next(new ServerError("Token error - " + err.message, 401, 'AUTHENTICATION_FAILED'));

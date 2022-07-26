@@ -46,6 +46,7 @@ model user {
   active        Int
   member        member[]
   team          team[]
+  token         token?
 }
 
 model member {
@@ -60,4 +61,12 @@ model member {
   @@unique([tournament_id, email], map: "uc_member")
   @@index([team_id], map: "fk_member_team")
   @@index([email], map: "fk_member_user")
+}
+
+model token {
+  id        Int    @id @default(autoincrement())
+  userId    Int    @unique(map: "userId_UNIQUE")
+  token     String @db.VarChar(300)
+  createdAt String @db.VarChar(100)
+  user      user   @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_token_user")
 }

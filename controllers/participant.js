@@ -42,7 +42,6 @@ exports.fetchAvailable = async (req, res, next) => {
 }
 
 exports.fetchRegistered = async (req, res, next) => {
-    console.log(req.user);
     try {
         const result = await prisma.member.findMany({
             where: { email: req.user.email },
