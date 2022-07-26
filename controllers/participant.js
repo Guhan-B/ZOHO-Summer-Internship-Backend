@@ -90,11 +90,9 @@ exports.editProfile = async (req, res, next) => {
 
         err.array().forEach(e => error[e.param] = { value: true, message: e.msg });
 
-        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('One or More inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
     try {
-        console.log(req.body);
-
         await prisma.user.update({
             where: {
                 id: req.user.id
@@ -170,7 +168,7 @@ exports.applyTournament = async (req, res, next) => {
                 names: names
             };
             
-            return next(new ServerError('One or more members already registered', 422, 'VALIDATION_FAILED', error));
+            return next(new ServerError('One or More members already registered', 422, 'VALIDATION_FAILED', error));
         }
         
         const leaderUser= await prisma.user.findUnique({ where:{ email: req.body.emails[0] }});
@@ -222,7 +220,7 @@ exports.withdraw = async (req, res, next) => {
     const err = validationResult(req);
 
     if (!err.isEmpty()) 
-        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', err.array()));
+        return next(new ServerError('One or More inputs in invalid', 422, 'VALIDATION_FAILED', err.array()));
 
     try {
         const result = await prisma.member.findUnique({

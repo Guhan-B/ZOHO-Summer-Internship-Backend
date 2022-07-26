@@ -2,16 +2,15 @@
 CREATE TABLE User (
 	id INT NOT NULL UNIQUE AUTO_INCREMENT,
     name VARCHAR(100),
-    mobile_number VARCHAR(20),
+    mobile_number VARCHAR(15),
     blood_group VARCHAR(5),
     email VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(256),
+    password VARCHAR(100),
     role INT NOT NULL DEFAULT 0,
     active INT NOT NULL,
     CONSTRAINT pk_user_id PRIMARY KEY (id)
 );
 
--- cancelled = 0 => NO, role = 1 => YES
 CREATE TABLE Tournament (
 	id INT NOT NULL UNIQUE AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -24,7 +23,6 @@ CREATE TABLE Tournament (
     CONSTRAINT pk_tournament PRIMARY KEY (id)
 );
 
--- result = 0 => REGISTERED, status = 1 => DISQUALIFIED, status = 2 => LOST, status = 3 => WINNER, status = 4 => NOT PARTICIPATED
 CREATE TABLE Team (
 	id INT NOT NULL UNIQUE AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -49,3 +47,17 @@ CREATE TABLE Member (
     CONSTRAINT uc_member UNIQUE (tournament_id, email)
 );
 
+CREATE TABLE Token (
+	id VARCHAR(50) NOT NULL UNIQUE AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    token VARCHAR(100) NOT NULL,
+    created_at VARCHAR(100) NOT NULL,
+    CONSTRAINT pk_token PRIMARY KEY (id),
+    CONSTRAINT fk_token_user FOREIGN KEY (user_id) REFERENCES User(id)
+);
+
+CREATE TABLE Ref (
+	id INT NOT NULL UNIQUE AUTO_INCREMENT,
+    category VARCHAR(50) NOT NULL,
+    value VARCHAR(50) NOT NULL
+);

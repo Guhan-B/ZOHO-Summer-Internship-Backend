@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const JwtDecode = require("jwt-decode");
+const bcrypt = require("bcrypt");
 
 const { ServerError } = require('../utils/error');
 const prisma = require('../utils/prisma');
@@ -7,40 +8,44 @@ const prisma = require('../utils/prisma');
 module.exports = (role) => async (req, res, next) => {
     const token = req.cookies.token;
 
-    if (!token) {
-        return next(new ServerError('Access token Missing', 401, 'AUTHENTICATION_FAILED'));
-    }
+    if (!token) 
+        return next(new ServerError('Access token missing', 401, 'AUTHENTICATION_FAILED'));
 
     try {
         const decoded = JwtDecode(token);
 
-        const user = await prisma.user.findUnique({ where: {id: decoded.id}});
-        const DBToken = await prisma.token.findUnique({ where: {userId: decoded.id}});
+        const userResult = await prisma.user.findUnique({where: { id: decoded.uid }});
+        const tokenResult = await prisma.token.findUnique({where: { id: decoded.tid }});
+        
+        if(!userResult || !tokenResult)
+            return next(new ServerError('Token error - Invalid access token', 401, 'AUTHENTICATION_FAILED'));
 
-        if(token !== DBToken.token)
-            return next(new ServerError('Token error - Token Invalid', 401, 'AUTHENTICATION_FAILED'));
-            
-        jwt.verify(token, process.env.ACCESS_TOKEN_KEY + user.password, async (err) => {
-            if (err) {
-                return next(new ServerError("Token error - " + err.message, 401, 'AUTHENTICATION_FAILED'));
+        jwt.verify(token, process.env.SECRET_KEY + userResult.password, { algorithms: ["HS256"] }, async (error) => {
+            if (error) {
+                return next(new ServerError("Token error - " + error.message, 401, 'AUTHENTICATION_FAILED'));
             } else {
-                if(!role.includes(user.role))
-                    return next(new ServerError('Access Denied', 401, 'AUTHENTICATION_FAILED'));
+                const isTokenSame = await bcrypt.compare(token, tokenResult.token);
 
-                req.user = user;
-                
+                if(!isTokenSame)
+                    return next(new ServerError('Token error - Invalid access token', 401, 'AUTHENTICATION_FAILED'));
+                if(!role.includes(userResult.role))
+
+                    return next(new ServerError('Access Denied', 401, 'AUTHENTICATION_FAILED'));
+                    
+                req.user = userResult;
+                req.token = tokenResult;
+
                 next();
             }
         });
     }
     catch(e) {
-        if(e instanceof JwtDecode.InvalidTokenError)
+        if(e instanceof JwtDecode.InvalidTokenError) {
             return next(new ServerError('Token error - Invalid access token', 401, 'AUTHENTICATION_FAILED'));
+        }
         else {
             console.log(e);
             return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
         }
     }
-
-
 }

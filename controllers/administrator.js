@@ -62,7 +62,7 @@ exports.createTournament = async (req, res, next) => {
 
         err.array().forEach(e => error[e.param] = { value: true, message: e.msg });
 
-        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('One or More inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
     
     try {
@@ -105,14 +105,14 @@ exports.editTournament = async (req, res, next) => {
 
         err.array().forEach(e => error[e.param] = { value: true, message: e.msg });
 
-        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('One or More inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
 
     try {
         const tournament = await prisma.tournament.findUnique({ where: {id: Number.parseInt(req.params.id) }});
 
         if(!tournament)
-            return next(new ServerError('Tournament does not exist', 404, 'RESOURCE_NOT_FOUND'));
+            return next(new ServerError('Tournament does not exist', 422, 'VALIDATION_FAILED'));
 
         await prisma.tournament.update({
             where: {id: Number.parseInt(req.params.id)},
@@ -181,7 +181,7 @@ exports.updateResult = async (req, res, next) => {
     const err = validationResult(req);
 
     if (!err.isEmpty()) 
-        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', err.array()));
+        return next(new ServerError('One or More inputs in invalid', 422, 'VALIDATION_FAILED', err.array()));
         
     try {
         const team = await prisma.team.findFirst({where: {id: req.body.teamId, tournament_id: req.body.tournamentId}});

@@ -1,9 +1,9 @@
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 
-const { ServerError } = require("../utils/error");
 const prisma = require("../utils/prisma");
+const { ServerError } = require("../utils/error");
+const { generateToken } = require("../utils/token");
 
 exports.user = async (req, res, next) => {
     return res.status(200).json({
@@ -24,14 +24,9 @@ exports.login = async (req, res, next) => {
     const err = validationResult(req);
 
     if (!err.isEmpty()) {
-        const error = {
-            email: { value: false, message: "" }, 
-            password: { value: false, message: "" },
-        };
-
+        const error = { email: { value: false, message: "" }, password: { value: false, message: "" } };
         err.array().forEach(e => error[e.param] = { value: true, message: e.msg });
-
-        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('One or More inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
 
     try {
@@ -39,39 +34,28 @@ exports.login = async (req, res, next) => {
 
         if(!user || user.active === 0) {
             const error = { email: { value: true, message: "Email is not registered" } };
-            return next(new ServerError('Email is not registered', 401, 'VALIDATION_FAILED', error));
+            return next(new ServerError('Email is not registered', 422, 'VALIDATION_FAILED', error));
         }
         
         const isPasswordSame = await bcrypt.compare(req.body.password, user.password);
 
         if (!isPasswordSame) {
             const error = { password: { value: true, message: "Password does not match" } };
-            return next(new ServerError('Password does not match', 401, 'VALIDATION_FAILED', error));
+            return next(new ServerError('Password does not match', 422, 'VALIDATION_FAILED', error));
         }
 
-        const token = jwt.sign(
-            {
-                id: user.id,
-                role: user.role
-            },
-            process.env.ACCESS_TOKEN_KEY + user.password,
-            {
-                expiresIn: '24h',
-                algorithm: "HS256",
-            }
-        );
-
-        await prisma.token.deleteMany({ where: { userId: user.id }});
+        const token = await generateToken({ uid: user.id }, process.env.SECRET_KEY + user.password)
 
         await prisma.token.create({
             data: {
-                userId: user.id,
-                token: token,
-                createdAt: new Date().toUTCString() 
+                id: token.id,
+                user_id: user.id,
+                token: token.hash,
+                created_at: new Date().toUTCString() 
             }
         });
 
-        res.cookie("token", token, { maxAge: 24 * 60 * 60 * 1000, httpOnly: true });
+        res.cookie("token", token.value, { maxAge: 24 * 60 * 60 * 1000, httpOnly: true });
 
         return res.status(200).json({
             data: { 
@@ -102,9 +86,7 @@ exports.register = async (req, res, next) => {
             bloodGroup: { value: false, message: "" },
             mobileNumber: { value: false, message: "" },
         };
-
         err.array().forEach(e => error[e.param] = { value: true, message: e.msg });
-
         return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
 
@@ -145,7 +127,6 @@ exports.register = async (req, res, next) => {
             });
         }
 
-
         return res.status(200).json({ data: { message: "Account created successfully, continue to login" }});
     }
     catch(e) {
@@ -155,20 +136,36 @@ exports.register = async (req, res, next) => {
 }
 
 exports.logout = async (req, res, next) => {
-    res.clearCookie("token", {maxAge: 0});
-    return res.status(200).json({data: {message: "Logout successfull."}})
+    try {
+        if(!req.body.all) {
+            await prisma.token.delete({
+                where: {
+                    id: req.token.id
+                }
+            });
+        }
+        else {
+            await prisma.token.deleteMany({
+                where: {
+                    user_id: req.user.id
+                }
+            });
+        }
+        res.clearCookie("token", {maxAge: 0});
+        return res.status(200).json({data: {message: "Logout successfull."}});
+    }
+    catch(e) {
+        console.log(e);
+        return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
+    }
 }
 
 exports.resetPassword = async (req, res, next) => {
     const err = validationResult(req);
 
     if (!err.isEmpty()) {
-        const error = {
-            password: false
-        };
-
+        const error = { password: false };
         err.array().forEach(e => error[e.param] = true);
-
         return next(new ServerError('Password is invalid', 422, 'VALIDATION_FAILED', error));
     }
 
@@ -180,9 +177,15 @@ exports.resetPassword = async (req, res, next) => {
             data: { password: hash }
         });
 
-        res.clearCookie("token", {maxAge: 0});
+        await prisma.token.deleteMany({
+            where: {
+                user_id: req.user.id
+            }
+        });
 
-        return res.status(200).json({data: {message: "password changed successfully"}});
+        res.clearCookie("token", { maxAge: 0 });
+
+        return res.status(200).json({data: {message: "Password changed successfully"}});
     }
     catch(e) {
         console.log(e);
