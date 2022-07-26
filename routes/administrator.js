@@ -27,12 +27,17 @@ const resultValidator = [
     Validators.result
 ]
 
+const addValidator = [
+    Validators.memberEmails,
+]
+
 router.get("/tournaments", Controllers.fetchTournaments);
 router.get("/tournaments/:id", Controllers.fetchTournament);
 
 router.post("/tournaments/create", createTournamentValidator, Controllers.createTournament);
 router.post("/tournaments/edit/:id", editTournamentValidator, Controllers.editTournament);
 router.post("/tournaments/cancel/:id", Controllers.cancelTournament);
-router.post("/team/result", resultValidator, Controllers.updateResult)
+router.post("/team/result", resultValidator, Controllers.updateResult);
+router.post("/add", addValidator, Controllers.addAdministrators);
 
 module.exports = router;

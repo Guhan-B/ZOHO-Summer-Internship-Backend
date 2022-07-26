@@ -25,11 +25,11 @@ exports.login = async (req, res, next) => {
 
     if (!err.isEmpty()) {
         const error = {
-            email: false, 
-            password: false
+            email: { value: false, message: "" }, 
+            password: { value: false, message: "" },
         };
 
-        err.array().forEach(e => error[e.param] = true);
+        err.array().forEach(e => error[e.param] = { value: true, message: e.msg });
 
         return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
@@ -37,14 +37,18 @@ exports.login = async (req, res, next) => {
     try {
         const user = await prisma.user.findUnique({where: {email: req.body.email}});
 
-        if(!user || user.active === 0)
-            return next(new ServerError('Email is not registered', 401, 'VALIDATION_FAILED', { email: true }));
+        if(!user || user.active === 0) {
+            const error = { email: { value: true, message: "Email is not registered" } };
+            return next(new ServerError('Email is not registered', 401, 'VALIDATION_FAILED', error));
+        }
         
         const isPasswordSame = await bcrypt.compare(req.body.password, user.password);
 
-        if (!isPasswordSame) 
-            return next(new ServerError('Password does not match', 401, 'VALIDATION_FAILED', { password: true }));
-        
+        if (!isPasswordSame) {
+            const error = { password: { value: true, message: "Password does not match" } };
+            return next(new ServerError('Password does not match', 401, 'VALIDATION_FAILED', error));
+        }
+
         const token = jwt.sign(
             {
                 id: user.id,
@@ -81,14 +85,14 @@ exports.register = async (req, res, next) => {
 
     if (!err.isEmpty()) {
         const error = {
-            name: false, 
-            mobileNumber: false, 
-            bloodGroup: false, 
-            email: false, 
-            password: false
+            email: { value: false, message: "" }, 
+            password: { value: false, message: "" },
+            name: { value: false, message: "" },
+            bloodGroup: { value: false, message: "" },
+            mobileNumber: { value: false, message: "" },
         };
 
-        err.array().forEach(e => error[e.param] = true);
+        err.array().forEach(e => error[e.param] = { value: true, message: e.msg });
 
         return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
@@ -96,8 +100,10 @@ exports.register = async (req, res, next) => {
     try {
         const user = await prisma.user.findUnique({ where: {email: req.body.email}});
         
-        if(user && user.active === 1)
-            return next(new ServerError('Email is already registered', 422, 'VALIDATION_FAILED', { email: true }));
+        if(user && user.active === 1) {
+            const error = { email: { value: true, message: "Email is already registered" } };
+            return next(new ServerError('Email is already registered', 422, 'VALIDATION_FAILED', error));
+        }
         
         const hash = await bcrypt.hash(req.body.password, 12);
 

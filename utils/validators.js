@@ -3,28 +3,28 @@ const { body } = require("express-validator");
 exports.userName = body("name")
   .trim()
   .notEmpty()
-  .withMessage("Name is required");
+  .withMessage("Name cannot be empty");
 
 exports.email = body("email")
   .trim()
   .notEmpty()
-  .withMessage("Email is required")
+  .withMessage("Email cannot be empty")
   .isEmail()
   .withMessage("Email is badly formatted");
 
 exports.password = body("password")
   .trim()
   .notEmpty()
-  .withMessage("Password is required")
+  .withMessage("Password cannot be empty")
   .isLength({ min: 8 })
-  .withMessage("Passowrd should be minimum 8 characters long");
+  .withMessage("Passowrd should be minimum 8 characters");
 
 exports.mobileNumber = body('mobileNumber')
   .trim()
   .notEmpty()
   .withMessage("Mobile Number is required")
   .isLength({ min: 10, max: 10 })
-  .withMessage("Mobile Number is badly formated");
+  .withMessage("Mobile Number is badly formatted");
 
 exports.bloodGroup = body('bloodGroup')
   .trim()
@@ -42,35 +42,35 @@ exports.bloodGroup = body('bloodGroup')
 exports.tournamentName = body('name')
   .trim()
   .notEmpty()
-  .withMessage("Tournament name is required");
+  .withMessage("Name cannot be empty");
 
 exports.description = body('description')
   .trim()
   .notEmpty()
-  .withMessage("Tournament description is required");
+  .withMessage("Description cannot be empty");
 
 exports.sport = body('sport')
   .trim()
   .notEmpty()
-  .withMessage("Sport Name is required");
+  .withMessage("Sport cannot be empty");
 
 exports.teamSize = body('teamSize')
   .trim()
   .notEmpty()
-  .withMessage("Team size is required")
+  .withMessage("Team Size cannot be empty")
   .isInt({ min: 1 })
-  .withMessage("Team size cannot be less that 1")
+  .withMessage("Team Size cannot be less that 1")
   .toInt();
 
 exports.eventDate = body("eventDate")
   .trim()
   .notEmpty()
-  .withMessage("Event date is required");
+  .withMessage("Event Date cannot be empty")
 
 exports.deadlineDate = body("deadlineDate")
   .trim()
   .notEmpty()
-  .withMessage("Deadline date is required");
+  .withMessage("Deadline Date cannot be empty");
 
 exports.teamId = body("teamId")
   .trim()
@@ -88,16 +88,16 @@ exports.result = body("result")
   .trim()
   .notEmpty()
   .withMessage("Result is required")
-  .isInt({ min: 0, max: 4 })
+  .isInt({ min: 0, max: 7 })
   .withMessage("Result is invalid")
   .toInt();
 
 exports.teamName = body("teamName")
   .trim()
   .notEmpty()
-  .withMessage("Team name is required");
+  .withMessage("Team Name cannot be empty");
 
 exports.memberEmails = body("emails")
   .notEmpty()
-  .withMessage("Participant emails are required");
+  .withMessage("Emails cannot be empty");
 

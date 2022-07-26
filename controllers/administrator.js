@@ -52,15 +52,15 @@ exports.createTournament = async (req, res, next) => {
 
     if (!err.isEmpty()) {
         const error = {
-            name: false, 
-            description: false,
-            sport: false,
-            teamSize: false,
-            eventDate: false,
-            deadlineDate: false
+            name: { value: false, message: "" }, 
+            description: { value: false, message: "" },
+            sport: { value: false, message: "" },
+            teamSize: { value: false, message: "" },
+            eventDate: { value: false, message: "" },
+            deadlineDate: { value: false, message: "" }
         };
 
-        err.array().forEach(e => error[e.param] = true);
+        err.array().forEach(e => error[e.param] = { value: true, message: e.msg });
 
         return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
@@ -95,15 +95,15 @@ exports.editTournament = async (req, res, next) => {
 
     if (!err.isEmpty()) {
         const error = {
-            name: false, 
-            description: false,
-            sport: false,
-            teamSize: false,
-            eventDate: false,
-            deadlineDate: false
+            name: { value: false, message: "" }, 
+            description: { value: false, message: "" },
+            sport: { value: false, message: "" },
+            teamSize: { value: false, message: "" },
+            eventDate: { value: false, message: "" },
+            deadlineDate: { value: false, message: "" }
         };
 
-        err.array().forEach(e => error[e.param] = true);
+        err.array().forEach(e => error[e.param] = { value: true, message: e.msg });
 
         return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
@@ -154,7 +154,7 @@ exports.cancelTournament = async (req, res, next) => {
                 tournament_id: Number.parseInt(req.params.id)
             },
             data: {
-                result: 5
+                result: 7
             }
         })
 
@@ -166,13 +166,15 @@ exports.cancelTournament = async (req, res, next) => {
     }
 }
 
-// For Reference
-// RESULTS = [
+// const RESULTS = [
 //     { label: "PENDING", value: 0, class: styles.pending },
 //     { label: "NOT PARTICIPATED", value: 1, class: styles.not_participated  },
 //     { label: "DISQUALIFIED", value: 2, class: styles.disqualified  },
-//     { label: "LOST", value: 3, class: styles.lost },
-//     { label: "WINNER", value: 4, class: styles.winner },
+//     { label: "LOST", value: 3, class: styles.disqualified  },
+//     { label: "1ST PLACE", value: 4, class: styles.winner },
+//     { label: "2ND PLACE", value: 5, class: styles.winner },
+//     { label: "3RD PLACE", value: 6, class: styles.winner },
+//     { label: "CANCELLED", value: 7, class: styles.disqualified },
 // ];
 
 exports.updateResult = async (req, res, next) => {
@@ -189,13 +191,13 @@ exports.updateResult = async (req, res, next) => {
 
         console.log(req.body.result);
 
-        if(req.body.result == 4) {
+        if(req.body.result == 4 || req.body.result == 5 || req.body.result == 6) {
             const winner = await prisma.team.findFirst({
-                where: {tournament_id: req.body.tournamentId, result: 4}
+                where: {tournament_id: req.body.tournamentId, result: req.body.result}
             });
 
             if(winner)
-                return next(new ServerError('Already assigned a winner for this tournament', 422, 'VALIDATION_FAILED'));
+                return next(new ServerError('Already assigned this ranking', 422, 'VALIDATION_FAILED'));
         }
         
         await prisma.team.update({
@@ -206,6 +208,46 @@ exports.updateResult = async (req, res, next) => {
         return res.status(200).json({ data: { message: "Result updated successfully" }});
     }
     catch(e){
+        console.log(e);
+        return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
+    }
+}
+
+exports.addAdministrators = async (req, res, next) => {
+    const err = validationResult(req);
+
+    if (!err.isEmpty()) 
+        return next(new ServerError('Emails cannot be empty', 422, 'VALIDATION_FAILED', err.array()));
+
+    try {
+        const error = Array.apply(null, Array(req.body.emails.length)).map(() => {return { value: false, message: "" }});
+
+        const users = await prisma.user.findMany({
+            where: {
+                email: {
+                    in: req.body.emails
+                }
+            }
+        });
+
+        if(users.length !== 0) {
+            const emails = users.map(user => user.email);
+
+            for(var i = 0; i < req.body.emails.length; i++) {
+                if(emails.includes(req.body.emails[i]))
+                    error[i] = { value: true, message: "Email already registered" };
+            }
+
+            return next(new ServerError('One or More emails already registered', 422, 'VALIDATION_FAILED', error));
+        }
+
+        await prisma.user.createMany({
+            data: req.body.emails.map(email => { return { email, active: 0, role: 1 } })
+        });
+
+        return res.status(200).json({ data: { message: "Administrators created successfully" } });
+    }
+    catch(e) {
         console.log(e);
         return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
     }

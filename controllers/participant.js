@@ -84,17 +84,15 @@ exports.editProfile = async (req, res, next) => {
 
     if (!err.isEmpty()) {
         const error = {
-            name: false, 
-            mobileNumber: false, 
-            bloodGroup: false, 
-            email: false, 
+            name: { value: false, message: "" },
+            bloodGroup: { value: false, message: "" },
+            mobileNumber: { value: false, message: "" },
         };
 
-        err.array().forEach(e => error[e.param] = true);
+        err.array().forEach(e => error[e.param] = { value: true, message: e.msg });
 
         return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
     }
-
     try {
         console.log(req.body);
 
@@ -121,15 +119,7 @@ exports.applyTournament = async (req, res, next) => {
     const err = validationResult(req);
 
     if (!err.isEmpty()) {
-        const error = {
-            tournamentId: false, 
-            teamName: false, 
-            emails: false, 
-        };
-
-        err.array().forEach(e => error[e.param] = true);
-
-        return next(new ServerError('One or more inputs in invalid', 422, 'VALIDATION_FAILED', error));
+        return next(new ServerError('Inputs cannot be empty', 422, 'VALIDATION_FAILED'));
     }
 
     try {
@@ -165,18 +155,17 @@ exports.applyTournament = async (req, res, next) => {
         if(result.length !== 0) {
             result = result.map(item => item.email);
 
-            const emails = Array.apply(null, Array(req.body.emails.length)).map(() => false);
-            const names = Array.apply(null, Array(req.body.emails.length)).map(() => false);
+            const emails = Array.apply(null, Array(req.body.emails.length)).map(() => {return { value: false, message: "" }});
+            const names = Array.apply(null, Array(req.body.emails.length)).map(() => {return { value: false, message: "" }});
             
             for(let i = 0; i < tournament.team_size; i++) {
                 if(result.includes(req.body.emails[i])) {
-                    emails[i] = true;
-                    names[i] = true;
+                    emails[i] = { value: true, message: "Member is already registered for this tournament" };
+                    names[i] = { value: true, message: "Member is already registered for this tournament" };
                 } 
             }
 
             const error = {
-                tournamentId: false, 
                 teamName: false, 
                 emails: emails, 
                 names: names
