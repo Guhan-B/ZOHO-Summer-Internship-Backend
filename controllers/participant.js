@@ -194,7 +194,8 @@ exports.applyTournament = async (req, res, next) => {
                 name: req.body.teamName,
                 size: tournament.team_size,
                 tournament_id: tournament.id,
-                leader_id: leaderUser.id
+                leader_id: leaderUser.id,
+                result: 1 // RESULT = 1 => PENDING (DEFAULT)
             }
         });
 
@@ -216,7 +217,7 @@ exports.applyTournament = async (req, res, next) => {
     }
 }
 
-exports.withdraw = async (req, res, next) => {
+exports.withdrawTournament = async (req, res, next) => {
     const err = validationResult(req);
 
     if (!err.isEmpty()) 

@@ -26,6 +26,6 @@ router.get("/registered", Controllers.fetchRegistered);
 router.post("/available", Controllers.fetchAvailable);
 router.post("/profile", editValidator, Controllers.editProfile);
 router.post("/apply", applyValidator, Controllers.applyTournament);
-router.post("/withdraw", withdrawValidator, Controllers.withdraw);
+router.post("/withdraw", withdrawValidator, Controllers.withdrawTournament);
 
 module.exports = router;
