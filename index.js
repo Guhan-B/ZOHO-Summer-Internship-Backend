@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const csurf = require('csurf');
 const dotenv = require('dotenv');
-const helmet = require('helmet');
 const cookieParser = require("cookie-parser");
 
 const errorHandler = require("./middlewares/error");
@@ -16,6 +16,7 @@ const app = express();
 
 app.use(express.json());
 app.use(cors({credentials: true, origin: "http://localhost:3000"}));
+// app.use(csurf({cookie:{httpOnly: true}}))
 app.use(cookieParser());
 
 app.use("/authentication", authenticationRoutes);

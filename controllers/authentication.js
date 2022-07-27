@@ -152,7 +152,7 @@ exports.logout = async (req, res, next) => {
             });
         }
         res.clearCookie("token", {maxAge: 0});
-        return res.status(200).json({data: {message: "Logout successfull."}});
+        return res.status(200).json({data: {message: "You have been logged out successfully"}});
     }
     catch(e) {
         console.log(e);
@@ -185,7 +185,7 @@ exports.resetPassword = async (req, res, next) => {
 
         res.clearCookie("token", { maxAge: 0 });
 
-        return res.status(200).json({data: {message: "Password changed successfully"}});
+        return res.status(200).json({data: {message: "Password changed successfully. Login to continue"}});
     }
     catch(e) {
         console.log(e);
