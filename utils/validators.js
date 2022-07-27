@@ -88,7 +88,7 @@ exports.result = body("result")
   .trim()
   .notEmpty()
   .withMessage("Result is required")
-  .isInt({ min: 0, max: 7 })
+  .isInt({ min: 0, max: 9 })
   .withMessage("Result is invalid")
   .toInt();
 
