@@ -1,11 +1,11 @@
 const express = require('express');
 const cors = require('cors');
-const csurf = require('csurf');
 const dotenv = require('dotenv');
 const cookieParser = require("cookie-parser");
 
 const errorHandler = require("./middlewares/error");
 const accessHandler = require("./middlewares/authentication");
+const CSRFHandler = require("./middlewares/CSRF");
 const authenticationRoutes = require("./routes/authentication");
 const administratorRoutes = require("./routes/administrator");
 const participantRoutes = require("./routes/participant");
@@ -16,8 +16,8 @@ const app = express();
 
 app.use(express.json());
 app.use(cors({credentials: true, origin: "http://localhost:3000"}));
-// app.use(csurf({cookie:{httpOnly: true}}))
 app.use(cookieParser());
+app.use(CSRFHandler);
 
 app.use("/authentication", authenticationRoutes);
 app.use("/administrator", accessHandler([1]), administratorRoutes);

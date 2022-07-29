@@ -1,11 +1,13 @@
 const bcrypt = require("bcrypt");
-const { validationResult } = require("express-validator");
+const { validationResult, body } = require("express-validator");
 
 const prisma = require("../utils/prisma");
 const { ServerError } = require("../utils/error");
 const { generateToken } = require("../utils/token");
 
 exports.user = async (req, res, next) => {
+    res.cookie("CSRF-TOKEN", req.csrfToken(), { secure: false });
+
     return res.status(200).json({
         data: { 
             user: {
@@ -44,18 +46,31 @@ exports.login = async (req, res, next) => {
             return next(new ServerError('Password does not match', 422, 'VALIDATION_FAILED', error));
         }
 
-        const token = await generateToken({ uid: user.id }, process.env.SECRET_KEY + user.password)
+        const existingTokens = await prisma.token.findMany({ where : { user_id: user.id }});
+        const expiredTokenIDs = [];
+        existingTokens.forEach(token => {
+            if(new Date(new Date(token.created_at).getTime() + 60 * 60 * 24 * 1000) < new Date()) {
+                expiredTokenIDs.push(token.id);
+            }
+        });
+        if(expiredTokenIDs.length > 0) 
+            await prisma.token.deleteMany({where: { id: expiredTokenIDs}});
+
+        const token = await generateToken({ uid: user.id }, process.env.SECRET_KEY + user.password);
 
         await prisma.token.create({
             data: {
-                id: token.id,
+                id: token.id.toString(),
                 user_id: user.id,
                 token: token.hash,
-                created_at: new Date().toUTCString() 
+                browser: req.body.browser,
+                os: req.body.OS,
+                created_at: new Date().toUTCString(),
             }
         });
-
-        res.cookie("token", token.value, { maxAge: 24 * 60 * 60 * 1000, httpOnly: true });
+        
+        res.cookie("token", token.value, { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, secure: false });
+        res.cookie("CSRF-TOKEN", req.csrfToken(), { secure: false });
 
         return res.status(200).json({
             data: { 
@@ -137,22 +152,40 @@ exports.register = async (req, res, next) => {
 
 exports.logout = async (req, res, next) => {
     try {
-        if(!req.body.all) {
+        if(req.body.current) {
             await prisma.token.delete({
                 where: {
                     id: req.token.id
                 }
             });
+            res.clearCookie("token", {maxAge: 0});
+            return res.status(200).json({data: { redirect: true }});
         }
-        else {
+
+        if(req.body.all) {
             await prisma.token.deleteMany({
-                where: {
-                    user_id: req.user.id
+                where: {    
+                    user_id: req.user.id,
+                    id: {
+                        not: req.token.id
+                    }
                 }
             });
+            return res.status(200).json({data: { redirect: false }});
         }
-        res.clearCookie("token", {maxAge: 0});
-        return res.status(200).json({data: {message: "You have been logged out successfully"}});
+
+        await prisma.token.delete({
+            where: {
+                id: req.body.sessionId,
+            }
+        });        
+
+        if(req.body.sessionId == req.token.id) {
+            res.clearCookie("token", {maxAge: 0});
+            return res.status(200).json({data: { redirect: true }});
+        }
+
+        return res.status(200).json({data: { redirect: false }});
     }
     catch(e) {
         console.log(e);
@@ -188,6 +221,33 @@ exports.resetPassword = async (req, res, next) => {
         return res.status(200).json({data: {message: "Password changed successfully. Login to continue"}});
     }
     catch(e) {
+        console.log(e);
+        return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
+    }
+}
+
+exports.fetchSessions = async (req, res, next) => {
+    try {
+        const sessions = await prisma.token.findMany({
+            where: { user_id: req.user.id },
+            select: {
+                created_at: true,
+                id: true,
+                browser: true,
+                os: true
+            }
+        });
+
+        sessions.forEach(session => {
+            if(session.id === req.token.id)
+                session.current = 1;
+            else
+                session.current = 0;
+        })
+
+        return res.status(200).json({ data: { sessions, currentSessionId: req.token.id }});
+    }
+    catch(e)  {
         console.log(e);
         return next(new ServerError('Unable to process request', 500, 'INTERNAL_SERVER_ERROR'));
     }

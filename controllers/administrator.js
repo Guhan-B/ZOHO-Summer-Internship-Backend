@@ -20,6 +20,9 @@ exports.fetchTournament = async (req, res, next) => {
             where: {id: Number.parseInt(req.params.id)},
             include: {
                 team: {
+                    orderBy: {
+                        result: "asc"
+                    },
                     select: {
                         id: true,
                         name: true,

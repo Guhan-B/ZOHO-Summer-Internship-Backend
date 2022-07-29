@@ -29,7 +29,6 @@ module.exports = (role) => async (req, res, next) => {
                 if(!isTokenSame)
                     return next(new ServerError('Token error - Invalid access token', 401, 'AUTHENTICATION_FAILED'));
                 if(!role.includes(userResult.role))
-
                     return next(new ServerError('Access Denied', 401, 'AUTHENTICATION_FAILED'));
                     
                 req.user = userResult;

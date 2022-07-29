@@ -29,5 +29,6 @@ router.post("/reset-password", accessHandler([0, 1]), resetValidator, Controller
 router.post("/logout", accessHandler([0, 1]), Controllers.logout);
 
 router.get("/user", accessHandler([0, 1]), Controllers.user);
+router.get("/sessions", accessHandler([0, 1]), Controllers.fetchSessions);
 
 module.exports = router;

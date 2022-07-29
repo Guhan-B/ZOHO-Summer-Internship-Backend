@@ -22,8 +22,8 @@ const withdrawValidator =  [
 ]
 
 router.get("/registered", Controllers.fetchRegistered);
+router.get("/available", Controllers.fetchAvailable);
 
-router.post("/available", Controllers.fetchAvailable);
 router.post("/profile", editValidator, Controllers.editProfile);
 router.post("/apply", applyValidator, Controllers.applyTournament);
 router.post("/withdraw", withdrawValidator, Controllers.withdrawTournament);

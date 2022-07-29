@@ -64,11 +64,13 @@ model member {
 }
 
 model token {
-  id         String @id @unique(map: "id") @db.VarChar(50)
+  id         String  @id @unique(map: "id") @db.VarChar(50)
   user_id    Int
-  token      String @db.VarChar(100)
-  created_at String @db.VarChar(100)
-  user       user   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_token_user")
+  token      String  @db.VarChar(100)
+  created_at String  @db.VarChar(100)
+  os         String? @db.VarChar(25)
+  browser    String? @db.VarChar(25)
+  user       user    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_token_user")
 
   @@index([user_id], map: "fk_token_user")
 }
