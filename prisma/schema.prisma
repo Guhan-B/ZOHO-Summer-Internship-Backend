@@ -14,8 +14,8 @@ model team {
   result        Int        @default(0)
   tournament_id Int
   leader_id     Int
-  user          user       @relation(fields: [leader_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_team_user")
   tournament    tournament @relation(fields: [tournament_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_team_tournament")
+  user          user       @relation(fields: [leader_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_team_user")
   member        member[]
 
   @@index([tournament_id], map: "fk_team_tournament")
@@ -54,9 +54,9 @@ model member {
   email         String     @db.VarChar(100)
   team_id       Int
   tournament_id Int
-  user          user       @relation(fields: [email], references: [email], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_user")
   team          team       @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_team")
   tournament    tournament @relation(fields: [tournament_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_tournament")
+  user          user       @relation(fields: [email], references: [email], onDelete: NoAction, onUpdate: NoAction, map: "fk_member_user")
 
   @@unique([tournament_id, email], map: "uc_member")
   @@index([team_id], map: "fk_member_team")

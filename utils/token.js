@@ -9,3 +9,8 @@ exports.generateToken = async (payload, secret) => {
 
     return { id, value, hash };
 }
+
+const generateRandomNumber = (max) => {
+    return Math.floor(Math.random() * max);
+}
+  

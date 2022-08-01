@@ -24,7 +24,6 @@ const editTournamentValidator = [
 const resultValidator = [
     Validators.teamId,
     Validators.tournamentId,
-    Validators.result
 ]
 
 const addValidator = [

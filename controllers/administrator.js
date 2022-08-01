@@ -170,19 +170,19 @@ exports.cancelTournament = async (req, res, next) => {
 }
 
 // array index and value attribute should be same
-// const RESULTS = [
-//     { label: "CANCELLED",        value: 0,  class: styles.red   },
-//     { label: "PENDING",          value: 1,  class: styles.blue  },
-//     { label: "NOT PARTICIPATED", value: 2,  class: styles.gray  },
-//     { label: "DISQUALIFIED",     value: 3,  class: styles.red   },
-//     { label: "LOST",             value: 4,  class: styles.red   },
-//     { label: "1ST PLACE",        value: 5,  class: styles.green },
-//     { label: "2ND PLACE",        value: 6,  class: styles.green },
-//     { label: "3RD PLACE",        value: 7,  class: styles.green },
-//     { label: "SHARED 1ST PLACE", value: 8,  class: styles.green },
-//     { label: "SHARED 2ST PLACE", value: 9,  class: styles.green },
-//     { label: "SHARED 3ST PLACE", value: 10, class: styles.green },
-// ];
+const RESULTS = [
+    { label: "CANCELLED",        value: 0,  },
+    { label: "PENDING",          value: 1,  },
+    { label: "1ST PLACE",        value: 2,  },
+    { label: "SHARED 1ST PLACE", value: 3,  },
+    { label: "2ND PLACE",        value: 4,  },
+    { label: "SHARED 2ST PLACE", value: 5,  },
+    { label: "3RD PLACE",        value: 6,  },
+    { label: "SHARED 3ST PLACE", value: 7,  },
+    { label: "NOT PARTICIPATED", value: 8,  },
+    { label: "DISQUALIFIED",     value: 9,  },
+    { label: "LOST",             value: 10, },
+];
 
 exports.updateResult = async (req, res, next) => {
     const err = validationResult(req);
@@ -196,13 +196,27 @@ exports.updateResult = async (req, res, next) => {
         if(!team)
             return next(new ServerError("The team is not registered for the given tournament", 404, 'RESOURCE_NOT_FOUND'));
 
-        if(req.body.result === 5 || req.body.result === 6 || req.body.result === 7) {
+        if(req.body.result === 2 || req.body.result === 3 || req.body.result === 4) {
             const winner = await prisma.team.findFirst({
                 where: {tournament_id: req.body.tournamentId, result: req.body.result}
             });
 
             if(winner)
                 return next(new ServerError('This place has already been assigned to a team', 422, 'VALIDATION_FAILED'));
+        }
+
+        const constraintMapping = { 2:3, 4:5, 6:7, 3:2, 5:4, 7:6 };
+
+
+        if(Object.keys(constraintMapping).map(i => Number.parseInt(i)).includes(req.body.result)) {
+            const winner = await prisma.team.findFirst({
+                where: {tournament_id: req.body.tournamentId, result: constraintMapping[req.body.result]}
+            });
+
+            console.log(winner);
+            
+            if(winner)
+                return next(new ServerError(`${RESULTS[req.body.result].label} cannot be assigned because ${RESULTS[constraintMapping[req.body.result]].label} has been assigned`, 422, 'VALIDATION_FAILED'));
         }
         
         await prisma.team.update({

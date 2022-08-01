@@ -54,7 +54,7 @@ exports.login = async (req, res, next) => {
             }
         });
         if(expiredTokenIDs.length > 0) 
-            await prisma.token.deleteMany({where: { id: expiredTokenIDs}});
+            await prisma.token.deleteMany({where: { id: {in: expiredTokenIDs}}});
 
         const token = await generateToken({ uid: user.id }, process.env.SECRET_KEY + user.password);
 
